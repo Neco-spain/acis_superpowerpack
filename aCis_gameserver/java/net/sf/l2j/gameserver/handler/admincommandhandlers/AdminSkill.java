@@ -1,22 +1,7 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.handler.admincommandhandlers;
 
 import java.util.StringTokenizer;
 
-import net.sf.l2j.commons.lang.StringUtil;
 import net.sf.l2j.gameserver.datatables.SkillTable;
 import net.sf.l2j.gameserver.handler.IAdminCommandHandler;
 import net.sf.l2j.gameserver.model.L2Object;
@@ -27,7 +12,11 @@ import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.serverpackets.MagicSkillUse;
 import net.sf.l2j.gameserver.network.serverpackets.NpcHtmlMessage;
 import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
+import net.sf.l2j.util.StringUtil;
 
+/**
+ * This class handles following admin commands: - show_skills - remove_skills - skill_list - skill_index - add_skill - remove_skill - get_skills - reset_skills - give_all_skills - remove_all_skills - add_clan_skills
+ */
 public class AdminSkill implements IAdminCommandHandler
 {
 	private static final String[] ADMIN_COMMANDS =
@@ -221,22 +210,25 @@ public class AdminSkill implements IAdminCommandHandler
 		if (skillsEnd - skillsStart > maxSkillsPerPage)
 			skillsEnd = skillsStart + maxSkillsPerPage;
 		
-		final StringBuilder sb = new StringBuilder(3000);
-		StringUtil.append(sb, "<html><body><table width=270><tr><td width=45><button value=\"Main\" action=\"bypass -h admin_admin\" width=40 height=15 back=\"sek.cbui94\" fore=\"sek.cbui92\"></td><td width=180><center>Delete Skills Menu</center></td><td width=45><button value=\"Back\" action=\"bypass -h admin_show_skills\" width=40 height=15 back=\"sek.cbui94\" fore=\"sek.cbui92\"></td></tr></table><br><br><center>Editing <font color=\"LEVEL\">", player.getName(), "</font>, ", player.getTemplate().getClassName(), " lvl ", player.getLevel(), ".<br><center><table width=270><tr>");
+		NpcHtmlMessage adminReply = new NpcHtmlMessage(0);
+		final StringBuilder replyMSG = StringUtil.startAppend(500 + maxPages * 50 + (skillsEnd - skillsStart + 1) * 50, "<html><body>" + "<table width=270><tr>" + "<td width=45><button value=\"Main\" action=\"bypass -h admin_admin\" width=40 height=15 back=\"sek.cbui94\" fore=\"sek.cbui92\"></td>" + "<td width=180><center>Delete Skills Menu</center></td>" + "<td width=45><button value=\"Back\" action=\"bypass -h admin_show_skills\" width=40 height=15 back=\"sek.cbui94\" fore=\"sek.cbui92\"></td>" + "</tr></table>" + "<br><br>" + "<center>Editing <font color=\"LEVEL\">", player.getName(), "</font>" + ", ", player.getTemplate().getClassName(), " lvl ", String.valueOf(player.getLevel()), ".<br><center><table width=270><tr>");
 		
 		for (int x = 0; x < maxPages; x++)
-			StringUtil.append(sb, "<td><a action=\"bypass -h admin_remove_skills ", x, "\">Page ", x + 1, "</a></td>");
+		{
+			int pagenr = x + 1;
+			StringUtil.append(replyMSG, "<td><a action=\"bypass -h admin_remove_skills ", String.valueOf(x), "\">Page ", String.valueOf(pagenr), "</a></td>");
+		}
 		
-		sb.append("</tr></table></center><br><table width=270><tr><td width=80>Name:</td><td width=60>Level:</td><td width=40>Id:</td></tr>");
+		replyMSG.append("</tr></table></center>" + "<br><table width=270>" + "<tr><td width=80>Name:</td><td width=60>Level:</td><td width=40>Id:</td></tr>");
 		
 		for (int i = skillsStart; i < skillsEnd; i++)
-			StringUtil.append(sb, "<tr><td width=80><a action=\"bypass -h admin_remove_skill ", skills[i].getId(), "\">", skills[i].getName(), "</a></td><td width=60>", skills[i].getLevel(), "</td><td width=40>", skills[i].getId(), "</td></tr>");
+		{
+			StringUtil.append(replyMSG, "<tr><td width=80><a action=\"bypass -h admin_remove_skill ", String.valueOf(skills[i].getId()), "\">", skills[i].getName(), "</a></td><td width=60>", String.valueOf(skills[i].getLevel()), "</td><td width=40>", String.valueOf(skills[i].getId()), "</td></tr>");
+		}
 		
-		sb.append("</table><br><center><table width=200><tr><td width=50 align=right>Id: </td><td><edit var=\"id_to_remove\" width=55></td><td width=100><button value=\"Remove skill\" action=\"bypass -h admin_remove_skill $id_to_remove\" width=95 height=21 back=\"bigbutton_over\" fore=\"bigbutton\"></td></tr><tr><td></td><td></td><td><button value=\"Back to stats\" action=\"bypass -h admin_current_player\" width=95 height=21 back=\"bigbutton_over\" fore=\"bigbutton\"></td></tr></table></center></body></html>");
-		
-		final NpcHtmlMessage html = new NpcHtmlMessage(0);
-		html.setHtml(sb.toString());
-		activeChar.sendPacket(html);
+		replyMSG.append("</table>" + "<br><center><table width=200>" + "<tr><td width=50 align=right>Id: </td>" + "<td><edit var=\"id_to_remove\" width=55></td>" + "<td width=100><button value=\"Remove skill\" action=\"bypass -h admin_remove_skill $id_to_remove\" width=95 height=21 back=\"bigbutton_over\" fore=\"bigbutton\"></td></tr>" + "<tr><td></td><td></td>" + "<td><button value=\"Back to stats\" action=\"bypass -h admin_current_player\" width=95 height=21 back=\"bigbutton_over\" fore=\"bigbutton\"></td>" + "</tr></table></center>" + "</body></html>");
+		adminReply.setHtml(replyMSG.toString());
+		activeChar.sendPacket(adminReply);
 	}
 	
 	private static void showMainPage(L2PcInstance activeChar)
@@ -251,12 +243,12 @@ public class AdminSkill implements IAdminCommandHandler
 			return;
 		}
 		
-		final NpcHtmlMessage html = new NpcHtmlMessage(0);
-		html.setFile("data/html/admin/charskills.htm");
-		html.replace("%name%", player.getName());
-		html.replace("%level%", player.getLevel());
-		html.replace("%class%", player.getTemplate().getClassName());
-		activeChar.sendPacket(html);
+		NpcHtmlMessage adminReply = new NpcHtmlMessage(0);
+		adminReply.setFile("data/html/admin/charskills.htm");
+		adminReply.replace("%name%", player.getName());
+		adminReply.replace("%level%", player.getLevel());
+		adminReply.replace("%class%", player.getTemplate().getClassName());
+		activeChar.sendPacket(adminReply);
 	}
 	
 	private static void adminGetSkills(L2PcInstance activeChar)

@@ -1,18 +1,6 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.model.actor;
+
+import Extensions.Events.Phoenix.EventManager;
 
 import net.sf.l2j.gameserver.ai.CtrlEvent;
 import net.sf.l2j.gameserver.model.L2Effect;
@@ -124,8 +112,12 @@ public abstract class L2Playable extends L2Character
 		// Stop HP/MP/CP Regeneration task
 		getStatus().stopHpMpRegeneration();
 		
+		if (EventManager.getInstance().isRunning() && EventManager.getInstance().isRegistered(this))
+		{
+			// do nothing
+		}
 		// Stop all active skills effects in progress
-		if (isPhoenixBlessed())
+		else if (isPhoenixBlessed())
 		{
 			// remove Lucky Charm if player has SoulOfThePhoenix/Salvation buff
 			if (getCharmOfLuck())

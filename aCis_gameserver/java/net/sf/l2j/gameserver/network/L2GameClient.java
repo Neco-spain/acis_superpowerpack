@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.network;
 
 import java.net.InetAddress;
@@ -29,9 +15,6 @@ import java.util.logging.Logger;
 
 import net.sf.l2j.Config;
 import net.sf.l2j.L2DatabaseFactory;
-import net.sf.l2j.commons.mmocore.MMOClient;
-import net.sf.l2j.commons.mmocore.MMOConnection;
-import net.sf.l2j.commons.mmocore.ReceivablePacket;
 import net.sf.l2j.gameserver.LoginServerThread;
 import net.sf.l2j.gameserver.LoginServerThread.SessionKey;
 import net.sf.l2j.gameserver.ThreadPoolManager;
@@ -44,7 +27,12 @@ import net.sf.l2j.gameserver.model.actor.instance.L2PcInstance;
 import net.sf.l2j.gameserver.network.serverpackets.ActionFailed;
 import net.sf.l2j.gameserver.network.serverpackets.L2GameServerPacket;
 import net.sf.l2j.gameserver.network.serverpackets.ServerClose;
+import net.sf.l2j.gameserver.skills.AbnormalEffect;
 import net.sf.l2j.gameserver.util.FloodProtectors;
+
+import org.mmocore.network.MMOClient;
+import org.mmocore.network.MMOConnection;
+import org.mmocore.network.ReceivablePacket;
 
 /**
  * Represents a client connected on Game Server
@@ -59,7 +47,7 @@ public final class L2GameClient extends MMOClient<MMOConnection<L2GameClient>> i
 		CONNECTED, // client has just connected
 		AUTHED, // client has authed but doesnt has character attached to it yet
 		IN_GAME // client has selected a char and is in game
-	}
+	};
 	
 	public GameClientState _state;
 	
@@ -68,14 +56,13 @@ public final class L2GameClient extends MMOClient<MMOConnection<L2GameClient>> i
 	private SessionKey _sessionId;
 	private L2PcInstance _activeChar;
 	private final ReentrantLock _activeCharLock = new ReentrantLock();
-	
-	@SuppressWarnings("unused")
+	private final String _address = getConnection().getInetAddress().getHostAddress();
 	private boolean _isAuthedGG;
 	private final long _connectionStartTime;
 	private CharSelectInfoPackage[] _charSlotMapping = null;
 	
 	// floodprotectors
-	private final long[] _floodProtectors = new long[FloodProtectors.Action.VALUES_LENGTH];;
+	private final FloodProtectors _floodProtectors = new FloodProtectors(this);
 	
 	// Task
 	protected final ScheduledFuture<?> _autoSaveInDB;
@@ -162,7 +149,7 @@ public final class L2GameClient extends MMOClient<MMOConnection<L2GameClient>> i
 		return _activeCharLock;
 	}
 	
-	public long[] getFloodProtectors()
+	public FloodProtectors getFloodProtectors()
 	{
 		return _floodProtectors;
 	}
@@ -225,7 +212,7 @@ public final class L2GameClient extends MMOClient<MMOConnection<L2GameClient>> i
 		
 		try (Connection con = L2DatabaseFactory.getInstance().getConnection())
 		{
-			PreparedStatement statement = con.prepareStatement("SELECT clanId FROM characters WHERE obj_id=?");
+			PreparedStatement statement = con.prepareStatement("SELECT clanId FROM characters WHERE obj_Id=?");
 			statement.setInt(1, objid);
 			ResultSet rs = statement.executeQuery();
 			
@@ -255,7 +242,7 @@ public final class L2GameClient extends MMOClient<MMOConnection<L2GameClient>> i
 					deleteCharByObjId(objid);
 				else
 				{
-					statement = con.prepareStatement("UPDATE characters SET deletetime=? WHERE obj_id=?");
+					statement = con.prepareStatement("UPDATE characters SET deletetime=? WHERE obj_Id=?");
 					statement.setLong(1, System.currentTimeMillis() + Config.DELETE_DAYS * 86400000L);
 					statement.setInt(2, objid);
 					statement.execute();
@@ -280,7 +267,7 @@ public final class L2GameClient extends MMOClient<MMOConnection<L2GameClient>> i
 		
 		try (Connection con = L2DatabaseFactory.getInstance().getConnection())
 		{
-			PreparedStatement statement = con.prepareStatement("UPDATE characters SET deletetime=0 WHERE obj_id=?");
+			PreparedStatement statement = con.prepareStatement("UPDATE characters SET deletetime=0 WHERE obj_Id=?");
 			statement.setInt(1, objid);
 			statement.execute();
 			statement.close();
@@ -445,7 +432,16 @@ public final class L2GameClient extends MMOClient<MMOConnection<L2GameClient>> i
 	
 	public void close(L2GameServerPacket gsp)
 	{
+		if (getConnection() == null)
+			return;
 		getConnection().close(gsp);
+	}
+	
+	public void close(L2GameServerPacket[] gspArray)
+	{
+		if (getConnection() == null)
+			return;
+		getConnection().close(gspArray);
 	}
 	
 	/**
@@ -542,6 +538,73 @@ public final class L2GameClient extends MMOClient<MMOConnection<L2GameClient>> i
 				{
 					setDetached(true);
 					fast = !getActiveChar().isInCombat() && !getActiveChar().isLocked();
+				}
+				L2PcInstance player = L2GameClient.this.getActiveChar();
+				if (player != null)
+				{
+					if ((player.isInStoreMode() && Config.OFFLINE_TRADE_ENABLE) || (player.isInCraftMode() && Config.OFFLINE_CRAFT_ENABLE))
+					{
+						if (player.getPet() != null)
+						{
+							player.getPet().unSummon(player);
+						}
+						
+						player.leaveParty();
+						
+						if (Config.OFFLINE_SET_NAME_COLOR)
+						{
+							player.getAppearance().setNameColor(Config.OFFLINE_NAME_COLOR);
+							player.broadcastUserInfo();
+						}
+						
+						if (!player.getIsOfflineShop())
+							player.setIsOfflineShop(true);
+						
+						if (Config.OFFLINE_TRADE_EFFECT)
+						{
+							switch (Config.OFFLINE_EFFECT_ID)
+							{
+								case 1:
+									player.startAbnormalEffect(AbnormalEffect.BLEEDING);
+									break;
+								case 2:
+									player.startAbnormalEffect(AbnormalEffect.POISON);
+									break;
+								case 3:
+									player.startAbnormalEffect(AbnormalEffect.MUTED);
+									break;
+								case 4:
+									player.startAbnormalEffect(AbnormalEffect.SLEEP);
+									break;
+								case 5:
+									player.startAbnormalEffect(AbnormalEffect.ROOT);
+									break;
+								case 6:
+									player.startAbnormalEffect(AbnormalEffect.HOLD_2);
+									break;
+								case 7:
+									player.startAbnormalEffect(AbnormalEffect.BIG_HEAD);
+									break;
+								case 8:
+									player.startAbnormalEffect(AbnormalEffect.FLAME);
+									break;
+								case 9:
+									player.startAbnormalEffect(AbnormalEffect.STUN);
+									break;
+								case 10:
+									player.startAbnormalEffect(AbnormalEffect.STEALTH);
+									break;
+								case 11:
+									player.startAbnormalEffect(AbnormalEffect.IMPRISIONING_2);
+									break;
+							}
+						}
+						
+						if (player.getOfflineStartTime() == 0)
+							player.setOfflineStartTime(System.currentTimeMillis());
+						
+						return;
+					}
 				}
 				cleanMe(fast);
 			}
@@ -653,14 +716,14 @@ public final class L2GameClient extends MMOClient<MMOConnection<L2GameClient>> i
 	{
 		if (getStats().countUnderflowException())
 		{
-			_log.severe("Client " + toString() + " - Disconnected: Too many buffer underflow exceptions.");
+			_log.severe("Client " + toString() + " HACK -> Disconnected.");
 			closeNow();
 			return;
 		}
 		if (_state == GameClientState.CONNECTED) // in CONNECTED state kick client immediately
 		{
 			if (Config.PACKET_HANDLER_DEBUG)
-				_log.severe("Client " + toString() + " - Disconnected, too many buffer underflows in non-authed state.");
+				_log.severe("Client " + toString() + " HACK -> Disconnected.");
 			closeNow();
 		}
 	}
@@ -672,14 +735,14 @@ public final class L2GameClient extends MMOClient<MMOConnection<L2GameClient>> i
 	{
 		if (getStats().countUnknownPacket())
 		{
-			_log.severe("Client " + toString() + " - Disconnected: Too many unknown packets.");
+			_log.severe("Client " + toString() + " HACK -> Disconnected.");
 			closeNow();
 			return;
 		}
 		if (_state == GameClientState.CONNECTED) // in CONNECTED state kick client immediately
 		{
 			if (Config.PACKET_HANDLER_DEBUG)
-				_log.severe("Client " + toString() + " - Disconnected, too many unknown packets in non-authed state.");
+				_log.severe("Client " + toString() + " HACK -> Disconnected.");
 			closeNow();
 		}
 	}
@@ -692,7 +755,7 @@ public final class L2GameClient extends MMOClient<MMOConnection<L2GameClient>> i
 	{
 		if (getStats().countFloods())
 		{
-			_log.severe("Client " + toString() + " - Disconnected, too many floods:" + getStats().longFloods + " long and " + getStats().shortFloods + " short.");
+			_log.severe("Client " + toString() + " FLOOD -> Disconnected");//, too many floods:" + getStats().longFloods + " long and " + getStats().shortFloods + " short.");
 			closeNow();
 			return;
 		}
@@ -791,5 +854,44 @@ public final class L2GameClient extends MMOClient<MMOConnection<L2GameClient>> i
 			return task.cancel(true);
 		}
 		return false;
+	}
+	
+	public void checkHwid(String allowedHwid)
+	{
+		if (!allowedHwid.equalsIgnoreCase("") && !getHWID().equalsIgnoreCase(allowedHwid))
+			closeNow();
+	}
+	
+	private String _hwid;
+	private boolean _isProtected;
+	
+	public String getHWID()
+	{
+		return _hwid;
+	}
+	
+	public boolean isProtected()
+	{
+		return _isProtected;
+	}
+	
+	public void setHWID(String hwid)
+	{
+		_hwid = hwid;
+	}
+	
+	public void setProtected(boolean isProtected)
+	{
+		_isProtected = isProtected;
+	}
+	
+	public boolean isGameGuardOk()
+	{
+		return _isAuthedGG;
+	}
+	
+	public String getIpAddr()
+	{
+		return _address;
 	}
 }

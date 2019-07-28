@@ -29,6 +29,7 @@ public final class ComplexBlock extends Block
 	
 	/**
 	 * Creates ComplexBlock.
+	 * 
 	 * @param bb : Input byte buffer.
 	 */
 	public ComplexBlock(ByteBuffer bb)
@@ -90,7 +91,7 @@ public final class ComplexBlock extends Block
 		// get height
 		return (short) (_buffer[index + 1] & 0x00FF | _buffer[index + 2] << 8);
 	}
-	
+
 	@Override
 	public short getHeightBelow(int geoX, int geoY, int worldZ)
 	{

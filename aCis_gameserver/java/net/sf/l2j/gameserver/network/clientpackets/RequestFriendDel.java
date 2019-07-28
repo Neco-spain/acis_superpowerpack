@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.network.clientpackets;
 
 import java.sql.Connection;
@@ -43,6 +29,13 @@ public final class RequestFriendDel extends L2GameClientPacket
 		if (activeChar == null)
 			return;
 		
+		if (activeChar.isSubmitingPin())
+		{
+			activeChar.sendMessage("Unable to do any action while PIN is not submitted");
+			return;
+		}
+		
+		
 		int id = CharNameTable.getInstance().getIdByName(_name);
 		
 		if (id == -1 || !activeChar.getFriendList().contains(id))
@@ -64,7 +57,7 @@ public final class RequestFriendDel extends L2GameClientPacket
 			// Player deleted from your friendlist
 			activeChar.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_HAS_BEEN_DELETED_FROM_YOUR_FRIENDS_LIST).addString(_name));
 			
-			activeChar.getFriendList().remove(Integer.valueOf(id));
+			activeChar.getFriendList().remove(new Integer(id));
 			activeChar.sendPacket(new FriendList(activeChar)); // update friendList *heavy method*
 			
 			L2PcInstance player = L2World.getInstance().getPlayer(_name);

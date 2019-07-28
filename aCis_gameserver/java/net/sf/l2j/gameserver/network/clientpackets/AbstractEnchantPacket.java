@@ -1,23 +1,12 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.network.clientpackets;
+
+import Extensions.Vip.VIPEngine;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import net.sf.l2j.Config;
+import net.sf.l2j.gameserver.model.actor.instance.L2PcInstance;
 import net.sf.l2j.gameserver.model.item.instance.ItemInstance;
 import net.sf.l2j.gameserver.model.item.kind.Item;
 import net.sf.l2j.gameserver.model.item.kind.Weapon;
@@ -107,9 +96,10 @@ public abstract class AbstractEnchantPacket extends L2GameClientPacket
 		 * <li>full body armors has a chance of 1/1 for +4, 2/3 for +5, 1/3 for +6, ..., 1/17 for +20. If you've made a +20 armor, chance to make it +21 will be equal to zero (0%).</li>
 		 * </ul>
 		 * @param enchantItem : The item to enchant.
+		 * @param activeChar 
 		 * @return the enchant chance under double format (0.7 / 0.35 / 0.44324...).
 		 */
-		public final double getChance(ItemInstance enchantItem)
+		public final double getChance(ItemInstance enchantItem, L2PcInstance activeChar)
 		{
 			if (!isValid(enchantItem))
 				return -1;
@@ -122,14 +112,29 @@ public abstract class AbstractEnchantPacket extends L2GameClientPacket
 			
 			// Armor formula : 0.66^(current-2), chance is lower and lower for each enchant.
 			if (enchantItem.isArmor())
-				chance = Math.pow(Config.ENCHANT_CHANCE_ARMOR, (enchantItem.getEnchantLevel() - 2));
+			{
+				if (VIPEngine.getInstance().isVip(activeChar) && Config.VIP_ENCHANT_CONFIG)
+					chance = Math.pow(Config.VIP_ENCHANT_CHANCE_ARMOR, (enchantItem.getEnchantLevel() - 2));
+				else
+					chance = Math.pow(Config.ENCHANT_CHANCE_ARMOR, (enchantItem.getEnchantLevel() - 2));
+			}
 			// Weapon formula is 70% for fighter weapon, 40% for mage weapon. Special rates after +14.
 			else if (enchantItem.isWeapon())
 			{
 				if (((Weapon) enchantItem.getItem()).isMagical())
-					chance = (enchantItem.getEnchantLevel() > 14) ? Config.ENCHANT_CHANCE_WEAPON_MAGIC_15PLUS : Config.ENCHANT_CHANCE_WEAPON_MAGIC;
+				{
+					if (VIPEngine.getInstance().isVip(activeChar) && Config.VIP_ENCHANT_CONFIG)
+						chance = (enchantItem.getEnchantLevel() > 14) ? Config.VIP_ENCHANT_CHANCE_WEAPON_MAGIC_15PLUS : Config.VIP_ENCHANT_CHANCE_WEAPON_MAGIC;
+					else
+						chance = (enchantItem.getEnchantLevel() > 14) ? Config.ENCHANT_CHANCE_WEAPON_MAGIC_15PLUS : Config.ENCHANT_CHANCE_WEAPON_MAGIC;
+				}
 				else
-					chance = (enchantItem.getEnchantLevel() > 14) ? Config.ENCHANT_CHANCE_WEAPON_NONMAGIC_15PLUS : Config.ENCHANT_CHANCE_WEAPON_NONMAGIC;
+				{
+					if (VIPEngine.getInstance().isVip(activeChar) && Config.VIP_ENCHANT_CONFIG)
+						chance = (enchantItem.getEnchantLevel() > 14) ? Config.VIP_ENCHANT_CHANCE_WEAPON_NONMAGIC_15PLUS : Config.VIP_ENCHANT_CHANCE_WEAPON_NONMAGIC;
+					else
+						chance = (enchantItem.getEnchantLevel() > 14) ? Config.ENCHANT_CHANCE_WEAPON_NONMAGIC_15PLUS : Config.ENCHANT_CHANCE_WEAPON_NONMAGIC;
+				}
 			}
 			
 			return chance;

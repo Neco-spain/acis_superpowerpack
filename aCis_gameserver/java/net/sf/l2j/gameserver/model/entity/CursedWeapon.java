@@ -1,22 +1,7 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.model.entity;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Level;
@@ -24,9 +9,7 @@ import java.util.logging.Logger;
 
 import net.sf.l2j.L2DatabaseFactory;
 import net.sf.l2j.gameserver.ThreadPoolManager;
-import net.sf.l2j.gameserver.datatables.ItemTable;
 import net.sf.l2j.gameserver.datatables.SkillTable;
-import net.sf.l2j.gameserver.geoengine.GeoData;
 import net.sf.l2j.gameserver.model.L2Effect;
 import net.sf.l2j.gameserver.model.L2Party.MessageType;
 import net.sf.l2j.gameserver.model.Location;
@@ -314,9 +297,8 @@ public class CursedWeapon
 	{
 		_player.abortAttack();
 		
-		// Prevent item from being removed by ItemsAutoDestroy
-		_item.setDestroyProtected(true);
 		_player.dropItem("DieDrop", _item, killer, true);
+		_item.setDropTime(0); // Prevent item from being removed by ItemsAutoDestroy
 		
 		_isActivated = false;
 		_isDropped = true;
@@ -355,19 +337,12 @@ public class CursedWeapon
 	{
 		_isActivated = false;
 		
-		// get position
-		int x = attackable.getX() + Rnd.get(-70, 70);
-		int y = attackable.getY() + Rnd.get(-70, 70);
-		int z = GeoData.getInstance().getHeight(x, y, attackable.getZ());
-		
-		// create item and drop it
-		_item = ItemTable.getInstance().createItem("CursedWeapon", _itemId, 1, player, attackable);
-		_item.setDestroyProtected(true);
-		_item.dropMe(attackable, x, y, z);
+		_item = attackable.dropItem(player, _itemId, 1);
+		_item.setDropTime(0); // Prevent item from being removed by ItemsAutoDestroy
 		
 		// RedSky and Earthquake
 		Broadcast.toAllOnlinePlayers(new ExRedSky(10));
-		Broadcast.toAllOnlinePlayers(new Earthquake(x, y, z, 14, 3));
+		Broadcast.toAllOnlinePlayers(new Earthquake(player.getX(), player.getY(), player.getZ(), 14, 3));
 		
 		_isDropped = true;
 		
@@ -472,7 +447,6 @@ public class CursedWeapon
 		if (player.isMounted() && !player.dismount())
 		{
 			player.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.FAILED_TO_PICKUP_S1).addItemName(item.getItemId()));
-			item.setDestroyProtected(true);
 			player.dropItem("InvDrop", item, null, true);
 			return;
 		}
@@ -531,37 +505,6 @@ public class CursedWeapon
 		
 		// _player.broadcastPacket(new SocialAction(_player, 17));
 		Broadcast.toAllOnlinePlayers(SystemMessage.getSystemMessage(SystemMessageId.THE_OWNER_OF_S2_HAS_APPEARED_IN_THE_S1_REGION).addZoneName(_player.getX(), _player.getY(), _player.getZ()).addItemName(_item.getItemId()));
-	}
-	
-	public void loadData()
-	{
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection())
-		{
-			PreparedStatement statement = con.prepareStatement("SELECT * FROM cursed_weapons WHERE itemId=?");
-			statement.setInt(1, _itemId);
-			ResultSet rset = statement.executeQuery();
-			
-			while (rset.next())
-			{
-				_playerId = rset.getInt("playerId");
-				_playerKarma = rset.getInt("playerKarma");
-				_playerPkKills = rset.getInt("playerPkKills");
-				_nbKills = rset.getInt("nbKills");
-				_currentStage = rset.getInt("currentStage");
-				_numberBeforeNextStage = rset.getInt("numberBeforeNextStage");
-				_hungryTime = rset.getInt("hungryTime");
-				_endTime = rset.getLong("endTime");
-				
-				reActivate(false);
-			}
-			
-			rset.close();
-			statement.close();
-		}
-		catch (Exception e)
-		{
-			_log.log(Level.WARNING, "Could not restore CursedWeapons data: " + e.getMessage(), e);
-		}
 	}
 	
 	/**
@@ -718,6 +661,41 @@ public class CursedWeapon
 		_stageKills = stageKills;
 	}
 	
+	public void setNbKills(int nbKills)
+	{
+		_nbKills = nbKills;
+	}
+	
+	public void setPlayerId(int playerId)
+	{
+		_playerId = playerId;
+	}
+	
+	public void setPlayerKarma(int playerKarma)
+	{
+		_playerKarma = playerKarma;
+	}
+	
+	public void setPlayerPkKills(int playerPkKills)
+	{
+		_playerPkKills = playerPkKills;
+	}
+	
+	public void setActivated(boolean isActivated)
+	{
+		_isActivated = isActivated;
+	}
+	
+	public void setDropped(boolean isDropped)
+	{
+		_isDropped = isDropped;
+	}
+	
+	public void setEndTime(long endTime)
+	{
+		_endTime = endTime;
+	}
+	
 	public void setPlayer(L2PcInstance player)
 	{
 		_player = player;
@@ -726,6 +704,21 @@ public class CursedWeapon
 	public void setItem(ItemInstance item)
 	{
 		_item = item;
+	}
+	
+	public void setCurrentStage(int currentStage)
+	{
+		_currentStage = currentStage;
+	}
+	
+	public void setNumberBeforeNextStage(int numberBeforeNextStage)
+	{
+		_numberBeforeNextStage = numberBeforeNextStage;
+	}
+	
+	public void setHungryTime(int hungryTime)
+	{
+		_hungryTime = hungryTime;
 	}
 	
 	public boolean isActivated()

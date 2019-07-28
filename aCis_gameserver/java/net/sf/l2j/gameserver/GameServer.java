@@ -1,18 +1,26 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver;
+
+import Extensions.ConsoleServerStatus;
+import Extensions.L2JxTreme;
+import Extensions.AchievmentsEngine.AchievementsManager;
+import Extensions.AutoManagers.AutoAnnounce;
+import Extensions.AutoManagers.AutoRestartGameServer;
+import Extensions.AutoManagers.AutoRewarder;
+import Extensions.AutoManagers.PlayersOnlineAutoAnnounce;
+import Extensions.AutoVoteReward.VoteRewardHopzone;
+import Extensions.AutoVoteReward.VoteRewardTopzone;
+import Extensions.Balancer.BalanceLoad;
+import Extensions.Events.Hide;
+import Extensions.Events.RandomFight;
+import Extensions.Events.SiegeReward;
+import Extensions.Events.StriderRace;
+import Extensions.Events.Phoenix.EventManager;
+import Extensions.Events.Phoenix.Engines.EventBuffer;
+import Extensions.Events.Phoenix.Engines.EventStats;
+import Extensions.Protection.ipCatcher;
+import Extensions.Vip.VIPEngine;
+import Extensions.VortexEngine.VoteMain;
+import classbalancer.ClassBalanceManager;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -28,15 +36,13 @@ import java.util.logging.Logger;
 import net.sf.l2j.Config;
 import net.sf.l2j.L2DatabaseFactory;
 import net.sf.l2j.Server;
-import net.sf.l2j.commons.lang.StringUtil;
-import net.sf.l2j.commons.mmocore.SelectorConfig;
-import net.sf.l2j.commons.mmocore.SelectorThread;
+import net.sf.l2j.gameserver.buffer.BufferParser;
+import net.sf.l2j.gameserver.buffer.L2Buffer;
 import net.sf.l2j.gameserver.cache.CrestCache;
 import net.sf.l2j.gameserver.cache.HtmCache;
 import net.sf.l2j.gameserver.communitybbs.Manager.ForumsBBSManager;
 import net.sf.l2j.gameserver.datatables.AccessLevels;
 import net.sf.l2j.gameserver.datatables.AdminCommandAccessRights;
-import net.sf.l2j.gameserver.datatables.AnnouncementTable;
 import net.sf.l2j.gameserver.datatables.ArmorSetsTable;
 import net.sf.l2j.gameserver.datatables.AugmentationData;
 import net.sf.l2j.gameserver.datatables.BookmarkTable;
@@ -56,10 +62,12 @@ import net.sf.l2j.gameserver.datatables.MapRegionTable;
 import net.sf.l2j.gameserver.datatables.MultisellData;
 import net.sf.l2j.gameserver.datatables.NpcTable;
 import net.sf.l2j.gameserver.datatables.NpcWalkerRoutesTable;
+import net.sf.l2j.gameserver.datatables.OfflineTradersTable;
 import net.sf.l2j.gameserver.datatables.PetDataTable;
 import net.sf.l2j.gameserver.datatables.RecipeTable;
 import net.sf.l2j.gameserver.datatables.SkillTable;
 import net.sf.l2j.gameserver.datatables.SkillTreeTable;
+import net.sf.l2j.gameserver.datatables.SkipTable;
 import net.sf.l2j.gameserver.datatables.SoulCrystalsTable;
 import net.sf.l2j.gameserver.datatables.SpawnTable;
 import net.sf.l2j.gameserver.datatables.SpellbookTable;
@@ -73,6 +81,7 @@ import net.sf.l2j.gameserver.handler.ChatHandler;
 import net.sf.l2j.gameserver.handler.ItemHandler;
 import net.sf.l2j.gameserver.handler.SkillHandler;
 import net.sf.l2j.gameserver.handler.UserCommandHandler;
+import net.sf.l2j.gameserver.handler.VoicedCommandHandler;
 import net.sf.l2j.gameserver.idfactory.IdFactory;
 import net.sf.l2j.gameserver.instancemanager.AuctionManager;
 import net.sf.l2j.gameserver.instancemanager.AutoSpawnManager;
@@ -87,6 +96,7 @@ import net.sf.l2j.gameserver.instancemanager.DimensionalRiftManager;
 import net.sf.l2j.gameserver.instancemanager.FishingChampionshipManager;
 import net.sf.l2j.gameserver.instancemanager.FourSepulchersManager;
 import net.sf.l2j.gameserver.instancemanager.GrandBossManager;
+import net.sf.l2j.gameserver.instancemanager.ItemsOnGroundManager;
 import net.sf.l2j.gameserver.instancemanager.MercTicketManager;
 import net.sf.l2j.gameserver.instancemanager.MovieMakerManager;
 import net.sf.l2j.gameserver.instancemanager.PetitionManager;
@@ -98,6 +108,7 @@ import net.sf.l2j.gameserver.instancemanager.SevenSignsFestival;
 import net.sf.l2j.gameserver.instancemanager.SiegeManager;
 import net.sf.l2j.gameserver.instancemanager.ZoneManager;
 import net.sf.l2j.gameserver.instancemanager.games.MonsterRace;
+import net.sf.l2j.gameserver.model.GodSystem;
 import net.sf.l2j.gameserver.model.L2Manor;
 import net.sf.l2j.gameserver.model.L2World;
 import net.sf.l2j.gameserver.model.entity.Hero;
@@ -108,19 +119,18 @@ import net.sf.l2j.gameserver.model.partymatching.PartyMatchWaitingList;
 import net.sf.l2j.gameserver.network.L2GameClient;
 import net.sf.l2j.gameserver.network.L2GamePacketHandler;
 import net.sf.l2j.gameserver.scripting.L2ScriptEngineManager;
-import net.sf.l2j.gameserver.taskmanager.AttackStanceTaskManager;
-import net.sf.l2j.gameserver.taskmanager.DecayTaskManager;
-import net.sf.l2j.gameserver.taskmanager.GameTimeTaskManager;
-import net.sf.l2j.gameserver.taskmanager.ItemsOnGroundTaskManager;
+import net.sf.l2j.gameserver.taskmanager.ItemsAutoDestroyTaskManager;
 import net.sf.l2j.gameserver.taskmanager.KnownListUpdateTaskManager;
-import net.sf.l2j.gameserver.taskmanager.MovementTaskManager;
-import net.sf.l2j.gameserver.taskmanager.PvpFlagTaskManager;
-import net.sf.l2j.gameserver.taskmanager.ShadowItemTaskManager;
 import net.sf.l2j.gameserver.taskmanager.TaskManager;
-import net.sf.l2j.gameserver.taskmanager.WaterTaskManager;
 import net.sf.l2j.gameserver.xmlfactory.XMLDocumentFactory;
 import net.sf.l2j.util.DeadLockDetector;
 import net.sf.l2j.util.IPv4Filter;
+import net.sf.l2j.util.Util;
+
+import org.mmocore.network.SelectorConfig;
+import org.mmocore.network.SelectorThread;
+
+import skillsbalancer.SkillsBalanceManager;
 
 public class GameServer
 {
@@ -145,23 +155,33 @@ public class GameServer
 	
 	public GameServer() throws Exception
 	{
+		long serverLoadStart = System.currentTimeMillis();
 		gameServer = this;
+		
+		if (Config.GAMESERVERSTATUS)
+		{
+			ConsoleServerStatus.getInstance();
+			_log.info("ServerStatus Started!");
+		}
 		
 		IdFactory.getInstance();
 		ThreadPoolManager.getInstance();
 		
 		new File("./data/crests").mkdirs();
 		
-		StringUtil.printSection("World");
+		L2JxTreme.info();
+		Util.printSection("World");
+		GameTimeController.getInstance();
 		L2World.getInstance();
 		MapRegionTable.getInstance();
-		AnnouncementTable.getInstance();
+		Announcements.getInstance();
+		BookmarkTable.getInstance();
 		
-		StringUtil.printSection("Skills");
+		Util.printSection("Skills");
 		SkillTable.getInstance();
 		SkillTreeTable.getInstance();
 		
-		StringUtil.printSection("Items");
+		Util.printSection("Items");
 		ItemTable.getInstance();
 		SummonItemsData.getInstance();
 		BuyListTable.getInstance();
@@ -171,79 +191,72 @@ public class GameServer
 		FishTable.getInstance();
 		SpellbookTable.getInstance();
 		SoulCrystalsTable.load();
-		AugmentationData.getInstance();
-		CursedWeaponsManager.getInstance();
 		
-		StringUtil.printSection("Admins");
+		Util.printSection("Augments");
+		AugmentationData.getInstance();
+		
+		Util.printSection("Characters");
 		AccessLevels.getInstance();
 		AdminCommandAccessRights.getInstance();
-		BookmarkTable.getInstance();
-		GmListTable.getInstance();
-		MovieMakerManager.getInstance();
-		PetitionManager.getInstance();
-		
-		StringUtil.printSection("Characters");
 		CharTemplateTable.getInstance();
 		CharNameTable.getInstance();
-		HennaTable.getInstance();
-		HelperBuffTable.getInstance();
-		TeleportLocationTable.getInstance();
-		HtmCache.getInstance();
-		PartyMatchWaitingList.getInstance();
-		PartyMatchRoomList.getInstance();
+		GmListTable.getInstance();
 		RaidBossPointsManager.getInstance();
+		ClassBalanceManager.getInstance();
+		SkillsBalanceManager.getInstance();
 		
-		StringUtil.printSection("Community server");
-		if (Config.ENABLE_COMMUNITY_BOARD) // Forums has to be loaded before clan data
+		Util.printSection("Community server");
+		if (Config.ENABLE_COMMUNITY_BOARD)
 			ForumsBBSManager.getInstance().initRoot();
 		else
 			_log.config("Community server is disabled.");
 		
-		StringUtil.printSection("Clans");
-		CrestCache.getInstance();
+		Util.printSection("Cache");
+		HtmCache.getInstance();
+		CrestCache.load();
+		TeleportLocationTable.getInstance();
+		PartyMatchWaitingList.getInstance();
+		PartyMatchRoomList.getInstance();
+		PetitionManager.getInstance();
+		HennaTable.getInstance();
+		HelperBuffTable.getInstance();
+		CursedWeaponsManager.getInstance();
+		SkipTable.getInstance();
+		
+		Util.printSection("Clans");
 		ClanTable.getInstance();
 		AuctionManager.getInstance();
 		ClanHallManager.getInstance();
 		
-		StringUtil.printSection("Geodata & Pathfinding");
+		Util.printSection("Geodata & Pathfinding");
 		GeoData.initialize();
 		PathFinding.initialize();
 		
-		StringUtil.printSection("World Bosses");
+		Util.printSection("World Bosses");
 		GrandBossManager.getInstance();
 		
-		StringUtil.printSection("Zones");
+		Util.printSection("Zones");
 		ZoneManager.getInstance();
 		GrandBossManager.getInstance().initZones();
 		
-		StringUtil.printSection("Task Managers");
-		AttackStanceTaskManager.getInstance();
-		DecayTaskManager.getInstance();
-		GameTimeTaskManager.getInstance();
-		ItemsOnGroundTaskManager.getInstance();
-		KnownListUpdateTaskManager.getInstance();
-		MovementTaskManager.getInstance();
-		PvpFlagTaskManager.getInstance();
-		ShadowItemTaskManager.getInstance();
-		WaterTaskManager.getInstance();
-		
-		StringUtil.printSection("Castles");
+		Util.printSection("Castles");
 		CastleManager.getInstance().load();
 		
-		StringUtil.printSection("Seven Signs");
+		Util.printSection("Seven Signs");
 		SevenSigns.getInstance().spawnSevenSignsNPC();
 		SevenSignsFestival.getInstance();
 		
-		StringUtil.printSection("Sieges");
+		Util.printSection("Sieges");
 		SiegeManager.getInstance();
 		SiegeManager.getSieges();
 		MercTicketManager.getInstance();
+		SiegeReward.getInstance();
 		
-		StringUtil.printSection("Manor Manager");
+		Util.printSection("Manor Manager");
 		CastleManorManager.getInstance();
 		L2Manor.getInstance();
 		
-		StringUtil.printSection("NPCs");
+		Util.printSection("NPCs");
 		BufferTable.getInstance();
 		HerbDropTable.getInstance();
 		PetDataTable.getInstance();
@@ -253,47 +266,106 @@ public class GameServer
 		StaticObjects.load();
 		SpawnTable.getInstance();
 		RaidBossSpawnManager.getInstance();
-		DayNightSpawnManager.getInstance();
+		DayNightSpawnManager.getInstance().trim().notifyChangeMode();
 		DimensionalRiftManager.getInstance();
+		BufferParser.getInstance();
+		L2Buffer.getInstance();
 		
-		StringUtil.printSection("Olympiads & Heroes");
+		Util.printSection("Olympiads & Heroes");
 		OlympiadGameManager.getInstance();
 		Olympiad.getInstance();
 		Hero.getInstance();
 		
-		StringUtil.printSection("Four Sepulchers");
+		Util.printSection("Four Sepulchers");
 		FourSepulchersManager.getInstance().init();
 		
-		StringUtil.printSection("Quests & Scripts");
+		Util.printSection("Protection");
+		Guard.Protection.Init();
+		
+		Util.printSection("Restart Manager");
+		if (Config.RESTART_BY_TIME_OF_DAY)
+			AutoRestartGameServer.getInstance().StartCalculationOfNextRestartTime();
+		else
+			_log.info("Restart System: Auto Restart System is Disabled. ");
+		
+		Util.printSection("Offline Shop");
+		if ((Config.OFFLINE_TRADE_ENABLE || Config.OFFLINE_CRAFT_ENABLE) && Config.RESTORE_OFFLINERS)
+			OfflineTradersTable.getInstance().restoreOfflineTraders();
+		else
+			_log.info("Offline Shop System Is Disabled. ");
+		
+		Util.printSection("Vip Engine");
+		VIPEngine.getInstance();
+		
+		Util.printSection("Vote Manager");
+		if (Config.ALLOW_HOPZONE_VOTE_REWARD)
+			VoteRewardHopzone.getInstance();
+		else
+			_log.info("AutoVoteReward: HopZone Is Disabled. ");
+		if (Config.ALLOW_TOPZONE_VOTE_REWARD)
+			VoteRewardTopzone.getInstance();
+		else
+			_log.info("AutoVoteReward: TopZone Is Disabled. ");
+		VoteMain.load();
+		
+		Util.printSection("Balancer");
+		BalanceLoad.LoadEm();
+		
+		Util.printSection("Phoenix Event Engine");
+		EventManager.getInstance();
+		EventStats.getInstance();
+		if (EventManager.getInstance().getBoolean("eventBufferEnabled"))
+			EventBuffer.getInstance();
+		
+		Util.printSection("Events");
+		AchievementsManager.getInstance();
+		GodSystem.getInstance();
+		if (Config.ALLOW_STRIDER_RACE_EVENT)
+			StriderRace.getInstance();
+		else
+			_log.info("Event: Strider Race Is Disabled. ");
+		if (Config.HIDE_EVENT)
+			Hide.getInstance();
+		else
+			_log.info("Event: Hide Is Disabled. ");
+		if (Config.ALLOW_RANDOM_FIGHT)
+			RandomFight.getInstance();
+		else
+			_log.info("Event: Random Fight Is Disabled. ");
+		
+		Util.printSection("Automatation");
+		if (Config.ALLOW_ANNOUNCE_ONLINE_PLAYERS)
+			PlayersOnlineAutoAnnounce.getInstance();
+		if (Config.ALLOW_AUTO_REWARDER)
+			AutoRewarder.getInstance();
+		if (Config.AUTO_ANNOUNCE_ENABLE)
+			AutoAnnounce.getInstance();
+		
 		QuestManager.getInstance();
 		BoatManager.getInstance();
-		
 		if (!Config.ALT_DEV_NO_SCRIPTS)
 		{
-			try
-			{
-				File scripts = new File("./data/scripts.cfg");
-				L2ScriptEngineManager.getInstance().executeScriptList(scripts);
-			}
-			catch (IOException ioe)
-			{
-				_log.severe("Failed loading scripts.cfg, no script going to be loaded");
-			}
-			QuestManager.getInstance().report();
+			Thread quests = new Thread(L2ScriptEngineManager.getInstance());
+			quests.start();
 		}
 		else
 			_log.config("QuestManager: Skipping scripts.");
 		
-		StringUtil.printSection("Monster Derby Track");
+		if (Config.SAVE_DROPPED_ITEM)
+			ItemsOnGroundManager.getInstance();
+		
+		if (Config.ITEM_AUTO_DESTROY_TIME > 0 || Config.HERB_AUTO_DESTROY_TIME > 0)
+			ItemsAutoDestroyTaskManager.getInstance();
 		MonsterRace.getInstance();
 		
-		StringUtil.printSection("Handlers");
+		Util.printSection("Handlers");
 		_log.config("AutoSpawnHandler: Loaded " + AutoSpawnManager.getInstance().size() + " handlers.");
 		_log.config("AdminCommandHandler: Loaded " + AdminCommandHandler.getInstance().size() + " handlers.");
 		_log.config("ChatHandler: Loaded " + ChatHandler.getInstance().size() + " handlers.");
 		_log.config("ItemHandler: Loaded " + ItemHandler.getInstance().size() + " handlers.");
 		_log.config("SkillHandler: Loaded " + SkillHandler.getInstance().size() + " handlers.");
 		_log.config("UserCommandHandler: Loaded " + UserCommandHandler.getInstance().size() + " handlers.");
+		_log.config("VoicedCommandHandler: Loaded " + VoicedCommandHandler.getInstance().size() + " handlers.");
 		
 		if (Config.ALLOW_WEDDING)
 			CoupleManager.getInstance();
@@ -301,11 +373,17 @@ public class GameServer
 		if (Config.ALT_FISH_CHAMPIONSHIP_ENABLED)
 			FishingChampionshipManager.getInstance();
 		
-		StringUtil.printSection("System");
+		ipCatcher.ipsLoad();
+		
+		Util.printSection("System");
 		TaskManager.getInstance();
+		
 		Runtime.getRuntime().addShutdownHook(Shutdown.getInstance());
 		ForumsBBSManager.getInstance();
 		_log.config("IdFactory: Free ObjectIDs remaining: " + IdFactory.getInstance().size());
+		
+		KnownListUpdateTaskManager.getInstance();
+		MovieMakerManager.getInstance();
 		
 		if (Config.DEADLOCK_DETECTOR)
 		{
@@ -325,10 +403,12 @@ public class GameServer
 		long usedMem = (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / 1048576;
 		long totalMem = Runtime.getRuntime().maxMemory() / 1048576;
 		
-		_log.info("Gameserver have started, used memory: " + usedMem + " / " + totalMem + " Mo.");
-		_log.info("Maximum allowed players: " + Config.MAXIMUM_ONLINE_USERS);
+		_log.log(Level.INFO, getClass().getSimpleName() + ": Gameserver have started, used memory: " + usedMem + " / " + totalMem + " MB.");
+		_log.log(Level.INFO, getClass().getSimpleName() + ": Maximum allowed players: " + Config.MAXIMUM_ONLINE_USERS);
+		long serverLoadEnd = System.currentTimeMillis();
+		_log.log(Level.INFO, getClass().getSimpleName() + ": Server Started in: " + ((serverLoadEnd - serverLoadStart) / 1000) + " seconds.");
 		
-		StringUtil.printSection("Login");
+		Util.printSection("Login");
 		_loginThread = LoginServerThread.getInstance();
 		_loginThread.start();
 		
@@ -382,10 +462,10 @@ public class GameServer
 		LogManager.getLogManager().readConfiguration(is);
 		is.close();
 		
-		StringUtil.printSection("aCis");
-		
 		// Initialize config
 		Config.load();
+		
+		Util.printSection("L2JxTreme v." + Config.VER + " builded:" + Config.BUILD);
 		
 		// Factories
 		XMLDocumentFactory.getInstance();

@@ -24,7 +24,7 @@ public class L2CastleBlacksmithInstance extends L2NpcInstance
 	{
 		if (CastleManorManager.getInstance().isDisabled())
 		{
-			final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
+			NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
 			html.setFile("data/html/npcdefault.htm");
 			html.replace("%objectId%", getObjectId());
 			html.replace("%npcname%", getName());
@@ -59,7 +59,7 @@ public class L2CastleBlacksmithInstance extends L2NpcInstance
 	{
 		if (CastleManorManager.getInstance().isDisabled())
 		{
-			final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
+			NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
 			html.setFile("data/html/npcdefault.htm");
 			html.replace("%objectId%", getObjectId());
 			html.replace("%npcname%", getName());
@@ -83,7 +83,7 @@ public class L2CastleBlacksmithInstance extends L2NpcInstance
 			}
 		}
 		
-		final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
+		NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
 		html.setFile(filename);
 		html.replace("%objectId%", getObjectId());
 		html.replace("%npcname%", getName());

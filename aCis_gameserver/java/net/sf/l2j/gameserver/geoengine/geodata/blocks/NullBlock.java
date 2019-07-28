@@ -46,7 +46,7 @@ public class NullBlock extends Block
 	{
 		return (short) worldZ;
 	}
-	
+
 	@Override
 	public short getHeightBelow(int geoX, int geoY, int worldZ)
 	{

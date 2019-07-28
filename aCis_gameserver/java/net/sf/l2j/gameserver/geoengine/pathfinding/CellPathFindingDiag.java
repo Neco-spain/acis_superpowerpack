@@ -21,13 +21,13 @@ import java.util.ListIterator;
 import java.util.logging.Level;
 
 import net.sf.l2j.Config;
-import net.sf.l2j.commons.lang.StringUtil;
 import net.sf.l2j.gameserver.geoengine.GeoData;
 import net.sf.l2j.gameserver.geoengine.PathFinding;
 import net.sf.l2j.gameserver.geoengine.pathfinding.nodes.GeoLocation;
 import net.sf.l2j.gameserver.geoengine.pathfinding.nodes.Node;
 import net.sf.l2j.gameserver.geoengine.pathfinding.nodes.NodeBufferDiag;
 import net.sf.l2j.gameserver.model.Location;
+import net.sf.l2j.util.StringUtil;
 
 /**
  * @author Hasha
@@ -209,6 +209,7 @@ public class CellPathFindingDiag extends PathCheckerDiag
 	
 	/**
 	 * Create list of node locations as result of calculated buffer node tree.
+	 * 
 	 * @param target : the entry point
 	 * @return List<NodeLoc> : list of node location
 	 */
@@ -253,6 +254,7 @@ public class CellPathFindingDiag extends PathCheckerDiag
 	
 	/**
 	 * Provides optimize selection of the buffer. When all pre-initialized buffer are locked, creates new buffer and log this situation.
+	 * 
 	 * @param size : pre-calculated minimal required size
 	 * @param playable : moving object is playable?
 	 * @return NodeBuffer : buffer
@@ -321,16 +323,16 @@ public class CellPathFindingDiag extends PathCheckerDiag
 		@Override
 		public String toString()
 		{
-			final StringBuilder sb = new StringBuilder(100);
+			final StringBuilder stat = new StringBuilder(100);
 			
-			StringUtil.append(sb, "Buffer ", _size, "x", _size, ": count=", _count, " uses=", _playableUses, "/", _uses);
+			StringUtil.append(stat, "Buffer ", String.valueOf(_size), "x", String.valueOf(_size), ": count=", String.valueOf(_count), " uses=", String.valueOf(_playableUses), "/", String.valueOf(_uses));
 			
 			if (_uses > 0)
-				StringUtil.append(sb, " total/avg(ms)=", _elapsed, "/", String.format("%1.2f", (double) _elapsed / _uses));
+				StringUtil.append(stat, " total/avg(ms)=", String.valueOf(_elapsed), "/", String.format("%1.2f", (double) _elapsed / _uses));
 			
-			StringUtil.append(sb, " ovf=", _playableOverflows, "/", _overflows);
+			StringUtil.append(stat, " ovf=", String.valueOf(_playableOverflows), "/", String.valueOf(_overflows));
 			
-			return sb.toString();
+			return stat.toString();
 		}
 	}
 	

@@ -1,21 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
-
-/**
- * @author godson
- */
 package net.sf.l2j.gameserver.model.olympiad;
 
 import java.sql.Connection;
@@ -33,15 +15,17 @@ import java.util.logging.Logger;
 
 import net.sf.l2j.Config;
 import net.sf.l2j.L2DatabaseFactory;
+import net.sf.l2j.gameserver.Announcements;
 import net.sf.l2j.gameserver.ThreadPoolManager;
 import net.sf.l2j.gameserver.instancemanager.ZoneManager;
 import net.sf.l2j.gameserver.model.actor.instance.L2PcInstance;
 import net.sf.l2j.gameserver.model.base.ClassId;
 import net.sf.l2j.gameserver.model.entity.Hero;
 import net.sf.l2j.gameserver.network.SystemMessageId;
+import net.sf.l2j.gameserver.network.clientpackets.Say2;
+import net.sf.l2j.gameserver.network.serverpackets.CreatureSay;
 import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
 import net.sf.l2j.gameserver.templates.StatsSet;
-import net.sf.l2j.gameserver.util.Broadcast;
 
 public class Olympiad
 {
@@ -315,7 +299,7 @@ public class Olympiad
 		@Override
 		public void run()
 		{
-			Broadcast.toAllOnlinePlayers(SystemMessage.getSystemMessage(SystemMessageId.OLYMPIAD_PERIOD_S1_HAS_ENDED).addNumber(_currentCycle));
+			Announcements.announceToAll(SystemMessage.getSystemMessage(SystemMessageId.OLYMPIAD_PERIOD_S1_HAS_ENDED).addNumber(_currentCycle));
 			
 			if (_scheduledWeeklyTask != null)
 				_scheduledWeeklyTask.cancel(true);
@@ -357,7 +341,7 @@ public class Olympiad
 		return _nobles.size();
 	}
 	
-	protected static StatsSet getNobleStats(int playerId)
+	public static StatsSet getNobleStats(int playerId)
 	{
 		return _nobles.get(playerId);
 	}
@@ -389,7 +373,7 @@ public class Olympiad
 				
 				_inCompPeriod = true;
 				
-				Broadcast.toAllOnlinePlayers(SystemMessage.getSystemMessage(SystemMessageId.THE_OLYMPIAD_GAME_HAS_STARTED));
+				Announcements.announceToAll(SystemMessage.getSystemMessage(SystemMessageId.THE_OLYMPIAD_GAME_HAS_STARTED));
 				_log.info("Olympiad: Olympiad game started.");
 				
 				_gameManager = ThreadPoolManager.getInstance().scheduleGeneralAtFixedRate(OlympiadGameManager.getInstance(), 30000, 30000);
@@ -404,7 +388,7 @@ public class Olympiad
 						@Override
 						public void run()
 						{
-							Broadcast.toAllOnlinePlayers(SystemMessage.getSystemMessage(SystemMessageId.OLYMPIAD_REGISTRATION_PERIOD_ENDED));
+							Announcements.announceToAll(SystemMessage.getSystemMessage(SystemMessageId.OLYMPIAD_REGISTRATION_PERIOD_ENDED));
 						}
 					}, regEnd);
 				}
@@ -418,7 +402,7 @@ public class Olympiad
 							return;
 						
 						_inCompPeriod = false;
-						Broadcast.toAllOnlinePlayers(SystemMessage.getSystemMessage(SystemMessageId.THE_OLYMPIAD_GAME_HAS_ENDED));
+						Announcements.announceToAll(SystemMessage.getSystemMessage(SystemMessageId.THE_OLYMPIAD_GAME_HAS_ENDED));
 						_log.info("Olympiad: Olympiad game ended.");
 						
 						while (OlympiadGameManager.getInstance().isBattleStarted()) // cleared in game manager
@@ -482,15 +466,28 @@ public class Olympiad
 	
 	protected void setNewOlympiadEnd()
 	{
-		Broadcast.toAllOnlinePlayers(SystemMessage.getSystemMessage(SystemMessageId.OLYMPIAD_PERIOD_S1_HAS_STARTED).addNumber(_currentCycle));
+		Announcements.announceToAll(SystemMessage.getSystemMessage(SystemMessageId.OLYMPIAD_PERIOD_S1_HAS_STARTED).addNumber(_currentCycle));
 		
 		Calendar currentTime = Calendar.getInstance();
-		currentTime.add(Calendar.MONTH, 1);
-		currentTime.set(Calendar.DAY_OF_MONTH, 1);
-		currentTime.set(Calendar.AM_PM, Calendar.AM);
-		currentTime.set(Calendar.HOUR, 12);
-		currentTime.set(Calendar.MINUTE, 0);
-		currentTime.set(Calendar.SECOND, 0);
+		if(Config.ALT_OLY_WEEK)
+		{
+			currentTime.set(Calendar.DAY_OF_WEEK, Config.ALT_OLY_DAY);
+			currentTime.set(Calendar.AM_PM, Calendar.AM);
+			currentTime.set(Calendar.HOUR, 0);
+			currentTime.set(Calendar.MINUTE, 0);
+			currentTime.set(Calendar.SECOND, 0);
+			while (currentTime.getTimeInMillis() < Calendar.getInstance().getTimeInMillis())
+				currentTime.add(Calendar.DATE, 7);
+		}
+		else
+		{
+			currentTime.add(Calendar.MONTH, 1);
+			currentTime.set(Calendar.DAY_OF_MONTH, 1);
+			currentTime.set(Calendar.AM_PM, Calendar.AM);
+			currentTime.set(Calendar.HOUR, 0);
+			currentTime.set(Calendar.MINUTE, 0);
+			currentTime.set(Calendar.SECOND, 0);
+		}
 		_olympiadEnd = currentTime.getTimeInMillis();
 		
 		Calendar nextChange = Calendar.getInstance();
@@ -591,13 +588,14 @@ public class Olympiad
 		try (Connection con = L2DatabaseFactory.getInstance().getConnection())
 		{
 			PreparedStatement statement;
-			for (Map.Entry<Integer, StatsSet> nobleEntry : _nobles.entrySet())
+			for (int nobleId : _nobles.keySet())
 			{
-				final StatsSet nobleInfo = nobleEntry.getValue();
+				StatsSet nobleInfo = _nobles.get(nobleId);
+				
 				if (nobleInfo == null)
 					continue;
 				
-				int charId = nobleEntry.getKey();
+				int charId = nobleId;
 				int classId = nobleInfo.getInteger(CLASS_ID);
 				int points = nobleInfo.getInteger(POINTS);
 				int compDone = nobleInfo.getInteger(COMP_DONE);
@@ -786,7 +784,7 @@ public class Olympiad
 	
 	public int getNoblePoints(int objId)
 	{
-		if (_nobles == null || !_nobles.containsKey(objId))
+		if ((_nobles == null) || !_nobles.containsKey(objId))
 			return 0;
 		
 		return _nobles.get(objId).getInteger(POINTS);
@@ -814,7 +812,7 @@ public class Olympiad
 	
 	public int getCompetitionDone(int objId)
 	{
-		if (_nobles == null || !_nobles.containsKey(objId))
+		if ((_nobles == null) || !_nobles.containsKey(objId))
 			return 0;
 		
 		return _nobles.get(objId).getInteger(COMP_DONE);
@@ -822,7 +820,7 @@ public class Olympiad
 	
 	public int getCompetitionWon(int objId)
 	{
-		if (_nobles == null || !_nobles.containsKey(objId))
+		if ((_nobles == null) || !_nobles.containsKey(objId))
 			return 0;
 		
 		return _nobles.get(objId).getInteger(COMP_WON);
@@ -830,7 +828,7 @@ public class Olympiad
 	
 	public int getCompetitionLost(int objId)
 	{
-		if (_nobles == null || !_nobles.containsKey(objId))
+		if ((_nobles == null) || !_nobles.containsKey(objId))
 			return 0;
 		
 		return _nobles.get(objId).getInteger(COMP_LOST);
@@ -851,6 +849,21 @@ public class Olympiad
 		_nobles.clear();
 	}
 	
+	public void olympiadEnd(L2PcInstance player)
+	{
+		long milliToEnd;
+		milliToEnd = (_period == 0 ? getMillisToOlympiadEnd() : getMillisToValidationEnd());
+		double numSecs = milliToEnd / 1000 % 60;
+		double countDown = (milliToEnd / 1000 - numSecs) / 60;
+		int numMins = (int) Math.floor(countDown % 60);
+		countDown = (countDown - numMins) / 60;
+		int numHours = (int) Math.floor(countDown % 24);
+		int numDays = (int) Math.floor((countDown - numHours) / 24);
+
+		CreatureSay cs = new CreatureSay(0, Say2.HERO_VOICE, "", "Olympiad period ends in " + numDays + " days, " + numHours + " hours and " + numMins + " mins.");
+		player.sendPacket(cs);
+	}
+	
 	/**
 	 * @param charId the noble object Id.
 	 * @param data the stats set data to add.
@@ -858,7 +871,7 @@ public class Olympiad
 	 */
 	protected static StatsSet addNobleStats(int charId, StatsSet data)
 	{
-		return _nobles.put(charId, data);
+		return _nobles.put(Integer.valueOf(charId), data);
 	}
 	
 	private static class SingletonHolder

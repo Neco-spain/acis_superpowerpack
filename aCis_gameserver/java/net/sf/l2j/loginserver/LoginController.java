@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.loginserver;
 
 import java.net.InetAddress;
@@ -172,7 +158,7 @@ public class LoginController
 		ALREADY_ON_LS,
 		ALREADY_ON_GS,
 		AUTH_SUCCESS
-	}
+	};
 	
 	public AuthLoginResult tryAuthLogin(String account, String password, L2LoginClient client)
 	{
@@ -406,11 +392,12 @@ public class LoginController
 				{
 					if ((user.length() >= 2) && (user.length() <= 14))
 					{
-						statement = con.prepareStatement("INSERT INTO accounts (login,password,lastactive,access_level) values(?,?,?,?)");
+						statement = con.prepareStatement("INSERT INTO accounts (login,password,lastactive,lastIp,access_level) values(?,?,?,?,?)");
 						statement.setString(1, user);
 						statement.setString(2, Base64.getEncoder().encodeToString(hash));
 						statement.setLong(3, System.currentTimeMillis());
-						statement.setInt(4, 0);
+						statement.setString(4, address.getHostAddress());
+						statement.setInt(5, 0);
 						statement.execute();
 						statement.close();
 						

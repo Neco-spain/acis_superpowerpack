@@ -3,7 +3,6 @@ package net.sf.l2j.gameserver.instancemanager;
 import java.util.HashMap;
 import java.util.Map;
 
-import net.sf.l2j.commons.lang.StringUtil;
 import net.sf.l2j.gameserver.ThreadPoolManager;
 import net.sf.l2j.gameserver.model.actor.instance.L2PcInstance;
 import net.sf.l2j.gameserver.network.serverpackets.NpcHtmlMessage;
@@ -37,13 +36,13 @@ public class MovieMakerManager
 	
 	public void mainHtm(L2PcInstance player)
 	{
-		final NpcHtmlMessage html = new NpcHtmlMessage(0);
+		NpcHtmlMessage html = new NpcHtmlMessage(0);
 		
 		if (!_sequence.isEmpty())
 		{
-			final StringBuilder sb = new StringBuilder();
+			StringBuilder sb = new StringBuilder();
 			for (Sequence s : _sequence.values())
-				StringUtil.append(sb, "<tr><td>", s._sequenceId, ": (", s._dist, ", ", s._yaw, ", ", s._pitch, ", ", s._time, ", ", s._duration, ", ", s._turn, ", ", s._rise, ", ", s._widescreen, ")</td></tr>");
+				sb.append("<tr><td>" + s._sequenceId + ": (" + s._dist + ", " + s._yaw + ", " + s._pitch + ", " + s._time + ", " + s._duration + ", " + s._turn + ", " + s._rise + ", " + s._widescreen + ")</td></tr>");
 			
 			html.setFile("data/html/admin/movie/main_notempty.htm");
 			html.replace("%sequences%", sb.toString());
@@ -114,7 +113,7 @@ public class MovieMakerManager
 	
 	public void addSequence(L2PcInstance player)
 	{
-		final NpcHtmlMessage html = new NpcHtmlMessage(0);
+		NpcHtmlMessage html = new NpcHtmlMessage(0);
 		html.setFile("data/html/admin/movie/add_sequence.htm");
 		player.sendPacket(html);
 	}
@@ -125,7 +124,7 @@ public class MovieMakerManager
 		{
 			final Sequence s = _sequence.get(id);
 			
-			final NpcHtmlMessage html = new NpcHtmlMessage(0);
+			NpcHtmlMessage html = new NpcHtmlMessage(0);
 			html.setFile("data/html/admin/movie/edit_sequence.htm");
 			html.replace("%sId%", s._sequenceId);
 			html.replace("%sDist%", s._dist);

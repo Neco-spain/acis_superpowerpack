@@ -1,15 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package quests.Q266_PleasOfPixies;
 
 import net.sf.l2j.gameserver.model.actor.L2Npc;
@@ -118,28 +106,8 @@ public class Q266_PleasOfPixies extends Quest
 		if (st == null)
 			return null;
 		
-		switch (npc.getNpcId())
-		{
-			case 20525:
-				if (st.dropItemsAlways(PREDATOR_FANG, Rnd.get(2, 3), 100))
-					st.set("cond", "2");
-				break;
-			
-			case 20530:
-				if (st.dropItems(PREDATOR_FANG, 1, 100, 800000))
-					st.set("cond", "2");
-				break;
-			
-			case 20534:
-				if (st.dropItems(PREDATOR_FANG, (Rnd.get(3) == 0) ? 1 : 2, 100, 600000))
-					st.set("cond", "2");
-				break;
-			
-			case 20537:
-				if (st.dropItemsAlways(PREDATOR_FANG, 2, 100))
-					st.set("cond", "2");
-				break;
-		}
+		if (st.dropItemsAlways(PREDATOR_FANG, Rnd.get(1, 3), 100))
+			st.set("cond", "2");
 		
 		return null;
 	}

@@ -1,20 +1,5 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.ai;
 
-import net.sf.l2j.Config;
 import net.sf.l2j.gameserver.model.L2CharPosition;
 import net.sf.l2j.gameserver.model.L2Object;
 import net.sf.l2j.gameserver.model.L2Skill;
@@ -34,7 +19,7 @@ public class L2PlayerAI extends L2PlayableAI
 		super(accessor);
 	}
 	
-	void setNextIntention(CtrlIntention intention, Object arg0, Object arg1)
+	void saveNextIntention(CtrlIntention intention, Object arg0, Object arg1)
 	{
 		_nextIntention = new IntentionCommand(intention, arg0, arg1);
 	}
@@ -76,7 +61,7 @@ public class L2PlayerAI extends L2PlayableAI
 		}
 		
 		// save current intention so it can be used after cast
-		setNextIntention(_intention, _intentionArg0, _intentionArg1);
+		saveNextIntention(_intention, _intentionArg0, _intentionArg1);
 		super.changeIntention(intention, arg0, arg1);
 	}
 	
@@ -161,7 +146,7 @@ public class L2PlayerAI extends L2PlayableAI
 		if (_actor.isAllSkillsDisabled() || _actor.isCastingNow() || _actor.isAttackingNow())
 		{
 			clientActionFailed();
-			setNextIntention(CtrlIntention.MOVE_TO, pos, null);
+			saveNextIntention(CtrlIntention.MOVE_TO, pos, null);
 			return;
 		}
 		
@@ -209,9 +194,6 @@ public class L2PlayerAI extends L2PlayableAI
 	private void thinkCast()
 	{
 		L2Character target = (L2Character) getTarget();
-		if (Config.DEBUG)
-			_log.warning("L2PlayerAI: thinkCast -> Start");
-		
 		if (_skill.getTargetType() == SkillTargetType.TARGET_GROUND && _actor instanceof L2PcInstance)
 		{
 			if (maybeMoveToPosition(((L2PcInstance) _actor).getCurrentSkillWorldPosition(), _skill.getCastRange()))

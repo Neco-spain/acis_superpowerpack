@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.model.actor.instance;
 
 import java.util.StringTokenizer;
@@ -39,6 +25,7 @@ public class L2DungeonGatekeeperInstance extends L2NpcInstance
 		StringTokenizer st = new StringTokenizer(command, " ");
 		String actualCommand = st.nextToken(); // Get actual command
 		
+		String filename = SevenSigns.SEVEN_SIGNS_HTML_PATH;
 		int sealAvariceOwner = SevenSigns.getInstance().getSealOwner(SevenSigns.SEAL_AVARICE);
 		int sealGnosisOwner = SevenSigns.getInstance().getSealOwner(SevenSigns.SEAL_GNOSIS);
 		int playerCabal = SevenSigns.getInstance().getPlayerCabal(player.getObjectId());
@@ -73,8 +60,9 @@ public class L2DungeonGatekeeperInstance extends L2NpcInstance
 			
 			if (!canPort)
 			{
-				final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
-				html.setFile(SevenSigns.SEVEN_SIGNS_HTML_PATH + "necro_no.htm");
+				NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
+				filename += "necro_no.htm";
+				html.setFile(filename);
 				player.sendPacket(html);
 			}
 			else
@@ -111,8 +99,9 @@ public class L2DungeonGatekeeperInstance extends L2NpcInstance
 			
 			if (!canPort)
 			{
-				final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
-				html.setFile(SevenSigns.SEVEN_SIGNS_HTML_PATH + "cata_no.htm");
+				NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
+				filename += "cata_no.htm";
+				html.setFile(filename);
 				player.sendPacket(html);
 			}
 			else

@@ -1,20 +1,5 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package custom.VarkaSilenosSupport;
 
-import net.sf.l2j.commons.lang.StringUtil;
 import net.sf.l2j.gameserver.datatables.SkillTable;
 import net.sf.l2j.gameserver.datatables.SkillTable.FrequentSkill;
 import net.sf.l2j.gameserver.model.L2Object;
@@ -30,6 +15,7 @@ import net.sf.l2j.gameserver.model.quest.Quest;
 import net.sf.l2j.gameserver.model.quest.QuestState;
 import net.sf.l2j.gameserver.network.serverpackets.ActionFailed;
 import net.sf.l2j.gameserver.network.serverpackets.WarehouseWithdrawList;
+import net.sf.l2j.gameserver.util.Util;
 
 /**
  * This script supports :
@@ -150,7 +136,7 @@ public class VarkaSilenosSupport extends Quest
 		if (st == null)
 			return htmltext;
 		
-		if (StringUtil.isDigit(event))
+		if (Util.isDigit(event))
 		{
 			final int[] buffInfo = BUFF[Integer.parseInt(event)];
 			if (st.getQuestItemsCount(SEED) >= buffInfo[1])
@@ -313,6 +299,7 @@ public class VarkaSilenosSupport extends Quest
 		return null;
 	}
 	
+	@SuppressWarnings("incomplete-switch")
 	@Override
 	public String onSkillSee(L2Npc npc, L2PcInstance caster, L2Skill skill, L2Object[] targets, boolean isPet)
 	{

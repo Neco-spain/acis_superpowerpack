@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.instancemanager;
 
 import java.sql.Connection;
@@ -28,6 +14,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import net.sf.l2j.L2DatabaseFactory;
+import net.sf.l2j.gameserver.Announcements;
 import net.sf.l2j.gameserver.ThreadPoolManager;
 import net.sf.l2j.gameserver.datatables.MapRegionTable;
 import net.sf.l2j.gameserver.datatables.NpcTable;
@@ -37,7 +24,6 @@ import net.sf.l2j.gameserver.model.L2Spawn;
 import net.sf.l2j.gameserver.model.SpawnLocation;
 import net.sf.l2j.gameserver.model.actor.L2Npc;
 import net.sf.l2j.gameserver.model.actor.template.NpcTemplate;
-import net.sf.l2j.gameserver.util.Broadcast;
 import net.sf.l2j.util.Rnd;
 
 /**
@@ -89,8 +75,13 @@ public class AutoSpawnManager
 	
 	private void restoreSpawnData()
 	{
+		@SuppressWarnings("unused")
+		int numLoaded = 0;
 		try (Connection con = L2DatabaseFactory.getInstance().getConnection())
 		{
+			PreparedStatement statement2 = null;
+			ResultSet rs2 = null;
+			
 			// Restore spawn group data, then the location data.
 			PreparedStatement statement = con.prepareStatement("SELECT * FROM random_spawn ORDER BY groupId ASC");
 			ResultSet rs = statement.executeQuery();
@@ -104,20 +95,22 @@ public class AutoSpawnManager
 				spawnInst.setSpawnCount(rs.getInt("count"));
 				spawnInst.setBroadcast(rs.getBoolean("broadcastSpawn"));
 				spawnInst.setRandomSpawn(rs.getBoolean("randomSpawn"));
+				numLoaded++;
+				
 				// Restore the spawn locations for this spawn group/instance.
-				PreparedStatement statement2 = con.prepareStatement("SELECT * FROM random_spawn_loc WHERE groupId=?");
+				statement2 = con.prepareStatement("SELECT * FROM random_spawn_loc WHERE groupId=?");
 				statement2.setInt(1, rs.getInt("groupId"));
-				ResultSet rs2 = statement2.executeQuery();
+				rs2 = statement2.executeQuery();
 				
 				while (rs2.next())
 				{
 					// Add each location to the spawn group/instance.
 					spawnInst.addSpawnLocation(rs2.getInt("x"), rs2.getInt("y"), rs2.getInt("z"), rs2.getInt("heading"));
 				}
-				rs2.close();
+				
 				statement2.close();
 			}
-			rs.close();
+			
 			statement.close();
 		}
 		catch (Exception e)
@@ -191,7 +184,7 @@ public class AutoSpawnManager
 		try
 		{
 			// Try to remove from the list of registered spawns if it exists.
-			_registeredSpawns.remove(spawnInst.getObjectId());
+			_registeredSpawns.remove(spawnInst);
 			
 			// Cancel the currently associated running scheduled task.
 			ScheduledFuture<?> respawnTask = _runningSpawns.remove(spawnInst._objectId);
@@ -204,6 +197,15 @@ public class AutoSpawnManager
 		}
 		
 		return true;
+	}
+	
+	/**
+	 * Remove a registered spawn from the list, specified by the given spawn object ID.
+	 * @param objectId
+	 */
+	public void removeSpawn(int objectId)
+	{
+		removeSpawn(_registeredSpawns.get(objectId));
 	}
 	
 	/**
@@ -433,7 +435,7 @@ public class AutoSpawnManager
 				
 				// Announce to all players that the spawn has taken place, with the nearest town location.
 				if (npcInst != null && spawnInst.isBroadcasting())
-					Broadcast.announceToOnlinePlayers("The " + npcInst.getName() + " has spawned near " + MapRegionTable.getInstance().getClosestTownName(npcInst.getX(), npcInst.getY()) + "!");
+					Announcements.announceToAll("The " + npcInst.getName() + " has spawned near " + MapRegionTable.getInstance().getClosestTownName(npcInst.getX(), npcInst.getY()) + "!");
 				
 				// If there is no despawn time, do not create a despawn task.
 				if (spawnInst.getDespawnDelay() > 0)
@@ -499,6 +501,8 @@ public class AutoSpawnManager
 	public class AutoSpawnInstance
 	{
 		protected int _objectId;
+		
+		protected int _spawnIndex;
 		
 		protected int _npcId;
 		
@@ -643,6 +647,18 @@ public class AutoSpawnManager
 				return false;
 			
 			return addSpawnLocation(spawnLoc[0], spawnLoc[1], spawnLoc[2], -1);
+		}
+		
+		public SpawnLocation removeSpawnLocation(int locIndex)
+		{
+			try
+			{
+				return _locList.remove(locIndex);
+			}
+			catch (IndexOutOfBoundsException e)
+			{
+				return null;
+			}
 		}
 	}
 	

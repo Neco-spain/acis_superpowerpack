@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.model.actor.instance;
 
 import java.util.StringTokenizer;
@@ -433,7 +419,7 @@ public class L2SignsPriestInstance extends L2NpcInstance
 						else
 							path = SevenSigns.SEVEN_SIGNS_HTML_PATH + "signs_6_dusk_contribute.htm";
 						
-						final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
+						NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
 						html.setFile(path);
 						html.replace("%contribStoneColor%", contribStoneColor);
 						html.replace("%stoneColor%", stoneColorContr);
@@ -701,27 +687,27 @@ public class L2SignsPriestInstance extends L2NpcInstance
 					break;
 				
 				case 20: // Seal Status (for when joining a cabal)
-					final StringBuilder sb = new StringBuilder();
+					StringBuilder contentBuffer = new StringBuilder();
 					
 					if (this instanceof L2DawnPriestInstance)
-						sb.append("<html><body>Priest of Dawn:<br><font color=\"LEVEL\">[ Seal Status ]</font><br>");
+						contentBuffer.append("<html><body>Priest of Dawn:<br><font color=\"LEVEL\">[ Seal Status ]</font><br>");
 					else
-						sb.append("<html><body>Dusk Priestess:<br><font color=\"LEVEL\">[ Status of the Seals ]</font><br>");
+						contentBuffer.append("<html><body>Dusk Priestess:<br><font color=\"LEVEL\">[ Status of the Seals ]</font><br>");
 					
 					for (int i = 1; i < 4; i++)
 					{
 						int sealOwner = SevenSigns.getInstance().getSealOwner(i);
 						
 						if (sealOwner != SevenSigns.CABAL_NULL)
-							sb.append("[" + SevenSigns.getSealName(i, false) + ": " + SevenSigns.getCabalName(sealOwner) + "]<br>");
+							contentBuffer.append("[" + SevenSigns.getSealName(i, false) + ": " + SevenSigns.getCabalName(sealOwner) + "]<br>");
 						else
-							sb.append("[" + SevenSigns.getSealName(i, false) + ": Nothingness]<br>");
+							contentBuffer.append("[" + SevenSigns.getSealName(i, false) + ": Nothingness]<br>");
 					}
 					
-					sb.append("<a action=\"bypass -h npc_" + getObjectId() + "_Chat 0\">Go back.</a></body></html>");
+					contentBuffer.append("<a action=\"bypass -h npc_" + getObjectId() + "_Chat 0\">Go back.</a></body></html>");
 					
 					html = new NpcHtmlMessage(getObjectId());
-					html.setHtml(sb.toString());
+					html.setHtml(contentBuffer.toString());
 					player.sendPacket(html);
 					break;
 				
@@ -809,7 +795,8 @@ public class L2SignsPriestInstance extends L2NpcInstance
 				break;
 		}
 		
-		final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
+		// Send a Server->Client NpcHtmlMessage containing the text of the L2Npc to the L2PcInstance
+		NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
 		html.setFile(filename);
 		html.replace("%objectId%", getObjectId());
 		player.sendPacket(html);

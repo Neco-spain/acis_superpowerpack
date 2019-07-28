@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.handler.itemhandlers;
 
 import net.sf.l2j.gameserver.ai.CtrlIntention;
@@ -70,7 +56,22 @@ public class ItemSkills implements IItemHandler
 			
 			// No message on retail, the use is just forgotten.
 			if (playable.isSkillDisabled(itemSkill))
+			{
+				// Update icons only for players.
+				if (!isPet && item.isEtcItem())
+				{
+					final int group = item.getEtcItem().getSharedReuseGroup();
+					if (group >= 0)
+					{
+						if (activeChar.getReuseTimeStamp().containsKey(itemSkill.getReuseHashCode()))
+						{
+							final long remainingTime = activeChar.getReuseTimeStamp().get(itemSkill.getReuseHashCode()).getRemaining();
+							activeChar.sendPacket(new ExUseSharedGroupItem(item.getItemId(), group, (int) remainingTime, itemSkill.getReuseDelay()));
+						}
+					}
+				}
 				return;
+			}
 			
 			if (!itemSkill.isPotion() && playable.isCastingNow())
 				return;
@@ -95,16 +96,16 @@ public class ItemSkills implements IItemHandler
 			}
 			else
 			{
+				playable.getAI().setIntention(CtrlIntention.IDLE);
+				if (!playable.useMagic(itemSkill, forceUse, false))
+					return;
+				
 				// Normal item consumption is 1, if more, it must be given in DP with getItemConsume().
 				if (!playable.destroyItem("Consume", item.getObjectId(), (itemSkill.getItemConsumeId() == 0 && itemSkill.getItemConsume() > 0) ? itemSkill.getItemConsume() : 1, null, false))
 				{
 					activeChar.sendPacket(SystemMessageId.NOT_ENOUGH_ITEMS);
 					return;
 				}
-				
-				playable.getAI().setIntention(CtrlIntention.IDLE);
-				if (!playable.useMagic(itemSkill, forceUse, false))
-					return;
 			}
 			
 			// Send message to owner.

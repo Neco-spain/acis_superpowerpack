@@ -48,6 +48,7 @@ public class NodeBufferStd
 	
 	/**
 	 * Constructor of NodeBuffer.
+	 * 
 	 * @param size : one dimension size of buffer
 	 */
 	public NodeBufferStd(int size)
@@ -64,6 +65,7 @@ public class NodeBufferStd
 	
 	/**
 	 * Find path consisting of Nodes. Starts at origin coordinates, ends in target coordinates.
+	 * 
 	 * @param gox : origin point x
 	 * @param goy : origin point y
 	 * @param goz : origin point z
@@ -77,9 +79,9 @@ public class NodeBufferStd
 		// load timestamp
 		_timeStamp = System.currentTimeMillis();
 		
-		// set coordinates (middle of the line (gox,goy) - (gtx,gty), will be in the center of the buffer)
+		// set coordinates (middle of the line (gox,goy) - (gtx,gty), will be in the center of the buffer) 
 		_cx = gox + (gtx - gox - _size) / 2;
-		_cy = goy + (gty - goy - _size) / 2;
+		_cy = goy + (gty - goy - _size) / 2; 
 		
 		_gtx = gtx;
 		_gty = gty;
@@ -108,6 +110,7 @@ public class NodeBufferStd
 	
 	/**
 	 * Creates list of Nodes to show debug path.
+	 * 
 	 * @return List<Node> : nodes
 	 */
 	public final List<Node> debugPath()
@@ -230,6 +233,7 @@ public class NodeBufferStd
 	
 	/**
 	 * Returns node, if it exists in buffer.
+	 * 
 	 * @param x : node X coord
 	 * @param y : node Y coord
 	 * @param z : node Z coord
@@ -260,6 +264,7 @@ public class NodeBufferStd
 	
 	/**
 	 * Add node given by coordinates to the buffer.
+	 * 
 	 * @param x : geo X coord
 	 * @param y : geo Y coord
 	 * @param z : geo Z coord
@@ -323,7 +328,7 @@ public class NodeBufferStd
 		final int dY = y - _gty;
 		final int dZ = (i - _gtz) / GeoStructure.CELL_SIZE;
 		
-		// return (Math.abs(dX) + Math.abs(dY) + Math.abs(dZ)) * Config.HEURISTIC_WEIGHT; // Manhattan distance
+//		return (Math.abs(dX) + Math.abs(dY) + Math.abs(dZ)) * Config.HEURISTIC_WEIGHT; // Manhattan distance
 		return Math.sqrt(dX * dX + dY * dY + dZ * dZ) * Config.HEURISTIC_WEIGHT; // Direct distance
 	}
 }

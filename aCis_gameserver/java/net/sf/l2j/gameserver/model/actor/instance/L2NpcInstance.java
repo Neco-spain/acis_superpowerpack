@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.model.actor.instance;
 
 import java.util.List;
@@ -22,8 +8,8 @@ import net.sf.l2j.gameserver.datatables.SkillTreeTable;
 import net.sf.l2j.gameserver.model.L2Effect;
 import net.sf.l2j.gameserver.model.L2EnchantSkillData;
 import net.sf.l2j.gameserver.model.L2EnchantSkillLearn;
+import net.sf.l2j.gameserver.model.L2RebirthSkillLearn;
 import net.sf.l2j.gameserver.model.L2Skill;
-import net.sf.l2j.gameserver.model.L2SkillLearn;
 import net.sf.l2j.gameserver.model.actor.L2Npc;
 import net.sf.l2j.gameserver.model.actor.status.FolkStatus;
 import net.sf.l2j.gameserver.model.actor.template.NpcTemplate;
@@ -36,6 +22,7 @@ import net.sf.l2j.gameserver.network.serverpackets.NpcHtmlMessage;
 import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
 import net.sf.l2j.gameserver.skills.effects.EffectBuff;
 import net.sf.l2j.gameserver.skills.effects.EffectDebuff;
+import net.sf.l2j.util.StringUtil;
 
 public class L2NpcInstance extends L2Npc
 {
@@ -80,16 +67,17 @@ public class L2NpcInstance extends L2Npc
 	{
 		if (((L2NpcInstance) npc).getClassesToTeach() == null)
 		{
-			final NpcHtmlMessage html = new NpcHtmlMessage(npc.getObjectId());
-			html.setHtml("<html><body>I cannot teach you. My class list is empty.<br>Your admin needs to add me teachTo informations.<br>NpcId:" + npc.getTemplate().getNpcId() + ", your classId:" + player.getClassId().getId() + "</body></html>");
+			NpcHtmlMessage html = new NpcHtmlMessage(npc.getObjectId());
+			final String sb = StringUtil.concat("<html><body>I cannot teach you. My class list is empty.<br>Ask admin to fix it. Need add my npcid and classes to skill_learn.sql.<br>NpcId:", String.valueOf(npc.getTemplate().getNpcId()), ", Your classId:", String.valueOf(player.getClassId().getId()), "<br></body></html>");
+			html.setHtml(sb);
 			player.sendPacket(html);
 			return;
 		}
 		
 		if (!npc.getTemplate().canTeach(classId))
 		{
-			final NpcHtmlMessage html = new NpcHtmlMessage(npc.getObjectId());
-			html.setFile("data/html/trainer/" + npc.getTemplate().getNpcId() + "-noskills.htm");
+			NpcHtmlMessage html = new NpcHtmlMessage(npc.getObjectId());
+			html.setHtml("<html><body>I cannot teach you any skills.<br>You must find your current class teachers.</body></html>");
 			player.sendPacket(html);
 			return;
 		}
@@ -97,13 +85,13 @@ public class L2NpcInstance extends L2Npc
 		AcquireSkillList asl = new AcquireSkillList(AcquireSkillList.SkillType.Usual);
 		boolean empty = true;
 		
-		for (L2SkillLearn sl : SkillTreeTable.getInstance().getAvailableSkills(player, classId))
+		for (L2RebirthSkillLearn rsl : SkillTreeTable.getInstance().getAvailableRebirthSkills(player, classId))
 		{
-			L2Skill sk = SkillTable.getInstance().getInfo(sl.getId(), sl.getLevel());
+			L2Skill sk = SkillTable.getInstance().getInfo(rsl.getId(), rsl.getLevel());
 			if (sk == null)
 				continue;
 			
-			asl.addSkill(sl.getId(), sl.getLevel(), sl.getLevel(), sl.getSpCost(), 0);
+			asl.addSkill(rsl.getId(), rsl.getLevel(), rsl.getLevel(), rsl.getCostSp(), 0);
 			empty = false;
 		}
 		
@@ -132,23 +120,24 @@ public class L2NpcInstance extends L2Npc
 	{
 		if (((L2NpcInstance) npc).getClassesToTeach() == null)
 		{
-			final NpcHtmlMessage html = new NpcHtmlMessage(npc.getObjectId());
-			html.setHtml("<html><body>I cannot teach you. My class list is empty.<br>Your admin needs to add me teachTo informations.<br>NpcId:" + npc.getTemplate().getNpcId() + ", your classId:" + player.getClassId().getId() + "</body></html>");
+			NpcHtmlMessage html = new NpcHtmlMessage(npc.getObjectId());
+			final String sb = StringUtil.concat("<html><body>I cannot teach you. My class list is empty.<br>Ask admin to fix it. Need add my npcid and classes to skill_learn.sql.<br>NpcId:", String.valueOf(npc.getTemplate().getNpcId()), ", Your classId:", String.valueOf(player.getClassId().getId()), "<br></body></html>");
+			html.setHtml(sb);
 			player.sendPacket(html);
 			return;
 		}
 		
 		if (!npc.getTemplate().canTeach(classId))
 		{
-			final NpcHtmlMessage html = new NpcHtmlMessage(npc.getObjectId());
-			html.setFile("data/html/trainer/" + npc.getTemplate().getNpcId() + "-noskills.htm");
+			NpcHtmlMessage html = new NpcHtmlMessage(npc.getObjectId());
+			html.setHtml("<html><body>I cannot teach you any skills.<br>You must find your current class teachers. </body></html>");
 			player.sendPacket(html);
 			return;
 		}
 		
 		if (player.getClassId().level() < 3)
 		{
-			final NpcHtmlMessage html = new NpcHtmlMessage(npc.getObjectId());
+			NpcHtmlMessage html = new NpcHtmlMessage(npc.getObjectId());
 			html.setHtml("<html><body> You must have 3rd class change quest completed.</body></html>");
 			player.sendPacket(html);
 			return;
@@ -198,10 +187,10 @@ public class L2NpcInstance extends L2Npc
 		// If the player is too high level, display a message and return
 		if (player.getLevel() > 39 || player.getClassId().level() >= 2)
 		{
-			final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
-			html.setHtml("<html><body>Newbie Guide:<br>I'm sorry, but you are not eligible to receive the protection blessing.<br1>It can only be bestowed on <font color=\"LEVEL\">characters below level 39 who have not made a seccond transfer.</font></body></html>");
-			html.replace("%objectId%", getObjectId());
-			player.sendPacket(html);
+			NpcHtmlMessage npcReply = new NpcHtmlMessage(getObjectId());
+			npcReply.setHtml("<html><body>Newbie Guide:<br>I'm sorry, but you are not eligible to receive the protection blessing.<br1>It can only be bestowed on <font color=\"LEVEL\">characters below level 39 who have not made a seccond transfer.</font></body></html>");
+			npcReply.replace("%objectId%", getObjectId());
+			player.sendPacket(npcReply);
 			return;
 		}
 		doCast(FrequentSkill.BLESSING_OF_PROTECTION.getSkill());

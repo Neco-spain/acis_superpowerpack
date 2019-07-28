@@ -1,25 +1,17 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.network.clientpackets;
 
+import Extensions.Events.RandomFight;
+import Extensions.Events.StriderRace;
+import Extensions.Events.Phoenix.EventManager;
+
 import net.sf.l2j.gameserver.instancemanager.SevenSignsFestival;
+import net.sf.l2j.gameserver.model.L2Party;
 import net.sf.l2j.gameserver.model.actor.instance.L2PcInstance;
 import net.sf.l2j.gameserver.model.zone.ZoneId;
 import net.sf.l2j.gameserver.network.L2GameClient;
 import net.sf.l2j.gameserver.network.L2GameClient.GameClientState;
 import net.sf.l2j.gameserver.network.SystemMessageId;
+import net.sf.l2j.gameserver.network.serverpackets.ActionFailed;
 import net.sf.l2j.gameserver.network.serverpackets.CharSelectInfo;
 import net.sf.l2j.gameserver.network.serverpackets.RestartResponse;
 import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
@@ -39,7 +31,13 @@ public final class RequestRestart extends L2GameClientPacket
 		if (player == null)
 			return;
 		
-		if (player.getActiveEnchantItem() != null || player.isLocked() || player.isInStoreMode())
+		if (player.getActiveEnchantItem() != null)
+		{
+			sendPacket(RestartResponse.valueOf(false));
+			return;
+		}
+		
+		if (player.isLocked())
 		{
 			sendPacket(RestartResponse.valueOf(false));
 			return;
@@ -52,26 +50,78 @@ public final class RequestRestart extends L2GameClientPacket
 			return;
 		}
 		
-		if (AttackStanceTaskManager.getInstance().isInAttackStance(player))
+		if (player.isInStoreMode())
+		{
+			sendPacket(RestartResponse.valueOf(false));
+			return;
+		}
+		
+		if (RandomFight.players.contains(player))
+		{
+			player.sendMessage("You can't restart when you are in random fight event.");
+			player.sendPacket(ActionFailed.STATIC_PACKET);
+			return;
+		}
+		
+		if (player.isProcessingTransaction())
+		{
+			player.sendMessage("You can't restart while offer trade.");
+			return;
+		}
+		
+		if (AttackStanceTaskManager.getInstance().get(player) && !player.isGM())
 		{
 			player.sendPacket(SystemMessageId.CANT_RESTART_WHILE_FIGHTING);
 			sendPacket(RestartResponse.valueOf(false));
 			return;
 		}
 		
+		if (EventManager.getInstance().isRegistered(player) && !EventManager.getInstance().getBoolean("restartAllowed"))
+		{
+			player.sendMessage("You cannot restart while you are a participant in an event.");
+			sendPacket(new ActionFailed());
+			return;
+		}
+		
+		if (StriderRace._players.contains(player))
+		{
+			player.sendMessage("You may not restart during Strider Race event.");
+			sendPacket(RestartResponse.valueOf(false));
+			return;
+		}
+		
+		// Prevent player from restarting if they are a festival participant and it is in progress,
+		// otherwise notify party members that the player is not longer a participant.
 		if (player.isFestivalParticipant())
 		{
 			if (SevenSignsFestival.getInstance().isFestivalInitialized())
 			{
-				player.sendPacket(SystemMessageId.NO_RESTART_HERE);
 				sendPacket(RestartResponse.valueOf(false));
 				return;
 			}
 			
-			if (player.isInParty())
+			final L2Party playerParty = player.getParty();
+			if (playerParty != null)
 				player.getParty().broadcastToPartyMembers(SystemMessage.sendString(player.getName() + " has been removed from the upcoming festival."));
 		}
 		
+		// Menu
+		if (player.getOnOffEffects() == true)
+			player.setOnOffEffects(false);
+		if (player.getTradeRefusal() == true)
+			player.setTradeRefusal(false);
+		if (player.isInRefusalMode() == true)
+			player.setInRefusalMode(false);
+		if (player.getExpSpRefusal() == true)
+			player.setExpSpRefusal(false);
+		if (player.getUnlimitedArrowsSS() == true)
+			player.setUnlimitedArrowsSS(false);
+		if (player.getExchangeRefusal() == true)
+			player.setExchangeRefusal(false);
+		if (player.getSsEffects() == true)
+			player.setSsEffects(false);
+		
+		// Remove player from Boss Zone
 		player.removeFromBossZone();
 		
 		final L2GameClient client = getClient();

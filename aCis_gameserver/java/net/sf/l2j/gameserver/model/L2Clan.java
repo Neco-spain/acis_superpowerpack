@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.model;
 
 import java.sql.Connection;
@@ -22,12 +8,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import net.sf.l2j.Config;
 import net.sf.l2j.L2DatabaseFactory;
-import net.sf.l2j.commons.lang.StringUtil;
 import net.sf.l2j.gameserver.cache.CrestCache;
 import net.sf.l2j.gameserver.cache.CrestCache.CrestType;
 import net.sf.l2j.gameserver.communitybbs.BB.Forum;
@@ -55,6 +41,7 @@ import net.sf.l2j.gameserver.network.serverpackets.PledgeSkillListAdd;
 import net.sf.l2j.gameserver.network.serverpackets.SkillCoolTime;
 import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
 import net.sf.l2j.gameserver.network.serverpackets.UserInfo;
+import net.sf.l2j.gameserver.util.Util;
 
 public class L2Clan
 {
@@ -64,6 +51,7 @@ public class L2Clan
 	private int _clanId;
 	private L2ClanMember _leader;
 	private final Map<Integer, L2ClanMember> _members = new HashMap<>();
+	private final List<L2PcInstance> _watchers = new CopyOnWriteArrayList<>();
 	
 	private String _allyName;
 	private int _allyId;
@@ -239,6 +227,21 @@ public class L2Clan
 	{
 		_leader = leader;
 		_members.put(leader.getObjectId(), leader);
+	}
+	
+	public List<L2PcInstance> getWatchers()
+	{
+		return _watchers;
+	}
+	
+	public void addWatcher(L2PcInstance player)
+	{
+		_watchers.add(player);
+	}
+	
+	public void removeWatcher(L2PcInstance player)
+	{
+		_watchers.remove(player);
 	}
 	
 	public void setNewLeader(L2ClanMember member)
@@ -1530,7 +1533,7 @@ public class L2Clan
 	 * <b>This method DOESN'T update the database.</b>
 	 * @param value : The total amount to set to _reputationScore.
 	 */
-	private void setReputationScore(int value)
+	public void setReputationScore(int value)
 	{
 		// That check is used to see if it needs a refresh.
 		final boolean needRefresh = (_reputationScore > 0 && value <= 0) || (value > 0 && _reputationScore <= 0);
@@ -1866,7 +1869,7 @@ public class L2Clan
 			return;
 		}
 		
-		if (!StringUtil.isAlphaNumeric(allyName))
+		if (!Util.isAlphaNumeric(allyName))
 		{
 			player.sendPacket(SystemMessageId.INCORRECT_ALLIANCE_NAME);
 			return;
@@ -2086,7 +2089,7 @@ public class L2Clan
 	public void changeClanCrest(int crestId)
 	{
 		if (crestId == 0)
-			CrestCache.getInstance().removeCrest(CrestType.PLEDGE, _crestId);
+			CrestCache.removeCrest(CrestType.PLEDGE, _crestId);
 		
 		_crestId = crestId;
 		
@@ -2119,7 +2122,7 @@ public class L2Clan
 		if (!onlyThisClan)
 		{
 			if (crestId == 0)
-				CrestCache.getInstance().removeCrest(CrestType.ALLY, _allyCrestId);
+				CrestCache.removeCrest(CrestType.ALLY, _allyCrestId);
 			
 			sqlStatement = "UPDATE clan_data SET ally_crest_id = ? WHERE ally_id = ?";
 			allyId = _allyId;
@@ -2165,7 +2168,7 @@ public class L2Clan
 	public void changeLargeCrest(int crestId)
 	{
 		if (crestId == 0)
-			CrestCache.getInstance().removeCrest(CrestType.PLEDGE_LARGE, _crestLargeId);
+			CrestCache.removeCrest(CrestType.PLEDGE_LARGE, _crestLargeId);
 		
 		_crestLargeId = crestId;
 		
@@ -2190,7 +2193,7 @@ public class L2Clan
 	{
 		if (_crestId != 0)
 		{
-			if (CrestCache.getInstance().getCrest(CrestType.PLEDGE, _crestId) == null)
+			if (CrestCache.getCrest(CrestType.PLEDGE, _crestId) == null)
 			{
 				_log.log(Level.INFO, "Removing non-existent crest for clan " + _name + " [" + _clanId + "], crestId:" + _crestId);
 				changeClanCrest(0);
@@ -2199,7 +2202,7 @@ public class L2Clan
 		
 		if (_crestLargeId != 0)
 		{
-			if (CrestCache.getInstance().getCrest(CrestType.PLEDGE_LARGE, _crestLargeId) == null)
+			if (CrestCache.getCrest(CrestType.PLEDGE_LARGE, _crestLargeId) == null)
 			{
 				_log.log(Level.INFO, "Removing non-existent large crest for clan " + _name + " [" + _clanId + "], crestLargeId:" + _crestLargeId);
 				changeLargeCrest(0);
@@ -2208,7 +2211,7 @@ public class L2Clan
 		
 		if (_allyCrestId != 0)
 		{
-			if (CrestCache.getInstance().getCrest(CrestType.ALLY, _allyCrestId) == null)
+			if (CrestCache.getCrest(CrestType.ALLY, _allyCrestId) == null)
 			{
 				_log.log(Level.INFO, "Removing non-existent ally crest for clan " + _name + " [" + _clanId + "], allyCrestId:" + _allyCrestId);
 				changeAllyCrest(0, true);

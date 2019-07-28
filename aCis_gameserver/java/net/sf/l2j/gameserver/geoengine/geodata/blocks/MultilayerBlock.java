@@ -18,8 +18,8 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 import net.sf.l2j.Config;
-import net.sf.l2j.gameserver.geoengine.geodata.GeoFormat;
 import net.sf.l2j.gameserver.geoengine.geodata.GeoStructure;
+import net.sf.l2j.gameserver.geoengine.geodata.GeoFormat;
 
 /**
  * @author Hasha
@@ -32,6 +32,7 @@ public class MultilayerBlock extends Block
 	
 	/**
 	 * Creates MultilayerBlock.
+	 * 
 	 * @param bb : Input byte buffer.
 	 */
 	public MultilayerBlock(ByteBuffer bb)
@@ -93,7 +94,7 @@ public class MultilayerBlock extends Block
 	
 	@Override
 	public short getHeightNearest(int geoX, int geoY, int worldZ)
-	{
+	{ 
 		// get cell index
 		final int index = getCellIndexNearest(geoX, geoY, worldZ);
 		
@@ -119,7 +120,7 @@ public class MultilayerBlock extends Block
 		while (layers-- > 0)
 		{
 			// get layer height
-			final short height = (short) (_buffer[index + 1] & 0x00FF | _buffer[index + 2] << 8);
+			final short height = (short) (_buffer[index + 1] & 0x00FF | _buffer[index + 2] << 8); 
 			
 			// layer height is higher than worldZ, return layer
 			if (height > worldZ)
@@ -132,7 +133,7 @@ public class MultilayerBlock extends Block
 		// none layer found, throw exception
 		throw new IndexOutOfBoundsException();
 	}
-	
+
 	@Override
 	public short getHeightBelow(int geoX, int geoY, int worldZ)
 	{
@@ -154,7 +155,7 @@ public class MultilayerBlock extends Block
 		while (layers-- > 0)
 		{
 			// get layer height
-			final short height = (short) (_buffer[index + 1] & 0x00FF | _buffer[index + 2] << 8);
+			final short height = (short) (_buffer[index + 1] & 0x00FF | _buffer[index + 2] << 8); 
 			
 			// layer height is higher than worldZ, skip layer
 			if (height >= worldZ)
@@ -203,7 +204,7 @@ public class MultilayerBlock extends Block
 			index += _buffer[index] * 3 + 1;
 		}
 		
-		// get layers count
+		// get layers count 
 		short layers = _buffer[index++];
 		
 		// loop though all cell layers, find closest layer and return cell index
@@ -211,7 +212,7 @@ public class MultilayerBlock extends Block
 		while (layers-- > 0)
 		{
 			// get layer height
-			final short tempHeight = (short) (_buffer[index + 1] & 0x00FF | _buffer[index + 2] << 8);
+			final short tempHeight = (short) (_buffer[index + 1] & 0x00FF | _buffer[index + 2] << 8); 
 			
 			// get Z distance
 			final int tempDz = Math.abs(tempHeight - worldZ);

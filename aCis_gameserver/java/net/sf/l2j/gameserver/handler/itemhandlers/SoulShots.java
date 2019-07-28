@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.handler.itemhandlers;
 
 import net.sf.l2j.gameserver.handler.IItemHandler;
@@ -60,7 +46,7 @@ public class SoulShots implements IItemHandler
 			return;
 		
 		// Consume Soulshots if player has enough of them.
-		int ssCount = weaponItem.getSoulShotCount();
+		int ssCount = (activeChar.getUnlimitedArrowsSS() == true ? 0 : weaponItem.getSoulShotCount());
 		if (weaponItem.getReducedSoulShot() > 0 && Rnd.get(100) < weaponItem.getReducedSoulShotChance())
 			ssCount = weaponItem.getReducedSoulShot();
 		
@@ -76,6 +62,7 @@ public class SoulShots implements IItemHandler
 		
 		weaponInst.setChargedShot(ShotType.SOULSHOT, true);
 		activeChar.sendPacket(SystemMessageId.ENABLED_SOULSHOT);
-		Broadcast.toSelfAndKnownPlayersInRadiusSq(activeChar, new MagicSkillUse(activeChar, activeChar, skills[0].getSkillId(), 1, 0, 0), 360000);
+		if (!activeChar.getSsEffects())
+			Broadcast.toSelfAndKnownPlayersInRadiusSq(activeChar, new MagicSkillUse(activeChar, activeChar, skills[0].getSkillId(), 1, 0, 0), 360000);
 	}
 }

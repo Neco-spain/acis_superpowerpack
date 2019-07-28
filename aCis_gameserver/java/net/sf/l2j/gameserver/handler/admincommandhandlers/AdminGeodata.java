@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.handler.admincommandhandlers;
 
 import net.sf.l2j.gameserver.geoengine.GeoData;
@@ -67,8 +53,8 @@ public class AdminGeodata implements IAdminCommandHandler
 		{
 			int geoX = GeoData.getInstance().getGeoX(activeChar.getX());
 			int geoY = GeoData.getInstance().getGeoY(activeChar.getY());
-			int rx = (activeChar.getX() - L2World.WORLD_X_MIN) / L2World.TILE_SIZE + L2World.TILE_X_MIN;
-			int ry = (activeChar.getY() - L2World.WORLD_Y_MIN) / L2World.TILE_SIZE + L2World.TILE_Y_MIN;
+			int rx = L2World.TILE_X_MIN + geoX / GeoStructure.REGION_CELLS_X;
+			int ry = L2World.TILE_Y_MIN + geoY / GeoStructure.REGION_CELLS_Y;
 			activeChar.sendMessage("Region: " + rx + "_" + ry);
 			if (GeoData.getInstance().hasGeoPos(geoX, geoY))
 			{

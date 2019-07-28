@@ -1,23 +1,11 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.model.actor.instance;
+
+import Extensions.Events.Phoenix.EventManager;
 
 import java.util.StringTokenizer;
 
 import net.sf.l2j.Config;
-import net.sf.l2j.commons.lang.StringUtil;
+import net.sf.l2j.gameserver.Announcements;
 import net.sf.l2j.gameserver.ai.CtrlIntention;
 import net.sf.l2j.gameserver.datatables.SkillTable.FrequentSkill;
 import net.sf.l2j.gameserver.instancemanager.CastleManager;
@@ -33,11 +21,7 @@ import net.sf.l2j.gameserver.network.serverpackets.ConfirmDlg;
 import net.sf.l2j.gameserver.network.serverpackets.MagicSkillUse;
 import net.sf.l2j.gameserver.network.serverpackets.MoveToPawn;
 import net.sf.l2j.gameserver.network.serverpackets.NpcHtmlMessage;
-import net.sf.l2j.gameserver.util.Broadcast;
 
-/**
- * @author evill33t & squeezed, rework Tryskell
- */
 public class L2WeddingManagerInstance extends L2NpcInstance
 {
 	public L2WeddingManagerInstance(int objectId, NpcTemplate template)
@@ -66,18 +50,18 @@ public class L2WeddingManagerInstance extends L2NpcInstance
 				
 				// Shouldn't be able to see wedding content if the mod isn't activated on configs
 				if (!Config.ALLOW_WEDDING)
-					sendHtmlMessage(player, "data/html/mods/Wedding_disabled.htm");
+					sendHtmlMessage(player, "data/html/mods/Wedding/Wedding_disabled.htm");
 				else
 				{
 					// Married people got access to another menu
 					if (player.isMarried())
-						sendHtmlMessage(player, "data/html/mods/Wedding_start2.htm");
+						sendHtmlMessage(player, "data/html/mods/Wedding/Wedding_start2.htm");
 					// "Under marriage acceptance" people go to this one
 					else if (player.isUnderMarryRequest())
-						sendHtmlMessage(player, "data/html/mods/Wedding_waitforpartner.htm");
+						sendHtmlMessage(player, "data/html/mods/Wedding/Wedding_waitforpartner.htm");
 					// And normal players go here :)
 					else
-						sendHtmlMessage(player, "data/html/mods/Wedding_start.htm");
+						sendHtmlMessage(player, "data/html/mods/Wedding/Wedding_start.htm");
 				}
 			}
 		}
@@ -96,7 +80,7 @@ public class L2WeddingManagerInstance extends L2NpcInstance
 				final L2PcInstance ptarget = L2World.getInstance().getPlayer(st.nextToken());
 				if (ptarget == null)
 				{
-					sendHtmlMessage(player, "data/html/mods/Wedding_notfound.htm");
+					sendHtmlMessage(player, "data/html/mods/Wedding/Wedding_notfound.htm");
 					return;
 				}
 				
@@ -113,7 +97,7 @@ public class L2WeddingManagerInstance extends L2NpcInstance
 				ptarget.sendPacket(new ConfirmDlg(1983).addString(player.getName() + " asked you to marry. Do you want to start a new relationship ?"));
 			}
 			else
-				sendHtmlMessage(player, "data/html/mods/Wedding_notfound.htm");
+				sendHtmlMessage(player, "data/html/mods/Wedding/Wedding_notfound.htm");
 		}
 		else if (command.startsWith("Divorce"))
 		{
@@ -137,7 +121,7 @@ public class L2WeddingManagerInstance extends L2NpcInstance
 			}
 			
 			// Simple checks to avoid exploits
-			if (partner.isInJail() || partner.isInOlympiadMode() || partner.isInDuel() || partner.isFestivalParticipant() || (partner.isInParty() && partner.getParty().isInDimensionalRift()) || partner.inObserverMode())
+			if (EventManager.getInstance().isRegistered(partner) || partner.isInJail() || partner.isInOlympiadMode() || partner.isInDuel() || partner.isFestivalParticipant() || (partner.isInParty() && partner.getParty().isInDimensionalRift()) || partner.inObserverMode())
 			{
 				player.sendMessage("Due to the current partner's status, the teleportation failed.");
 				return;
@@ -178,28 +162,28 @@ public class L2WeddingManagerInstance extends L2NpcInstance
 		// Check if player target himself
 		if (ptarget.getObjectId() == player.getObjectId())
 		{
-			sendHtmlMessage(player, "data/html/mods/Wedding_error_wrongtarget.htm");
+			sendHtmlMessage(player, "data/html/mods/Wedding/Wedding_error_wrongtarget.htm");
 			return false;
 		}
 		
 		// Sex check
 		if (ptarget.getAppearance().getSex() == player.getAppearance().getSex() && !Config.WEDDING_SAMESEX)
 		{
-			sendHtmlMessage(player, "data/html/mods/Wedding_error_sex.htm");
+			sendHtmlMessage(player, "data/html/mods/Wedding/Wedding_error_sex.htm");
 			return false;
 		}
 		
 		// Check if player has the target on friendlist
 		if (!player.getFriendList().contains(ptarget.getObjectId()))
 		{
-			sendHtmlMessage(player, "data/html/mods/Wedding_error_friendlist.htm");
+			sendHtmlMessage(player, "data/html/mods/Wedding/Wedding_error_friendlist.htm");
 			return false;
 		}
 		
 		// Target mustn't be already married
 		if (ptarget.isMarried())
 		{
-			sendHtmlMessage(player, "data/html/mods/Wedding_error_alreadymarried.htm");
+			sendHtmlMessage(player, "data/html/mods/Wedding/Wedding_error_alreadymarried.htm");
 			return false;
 		}
 		
@@ -207,14 +191,14 @@ public class L2WeddingManagerInstance extends L2NpcInstance
 		if (Config.WEDDING_FORMALWEAR)
 			if (!wearsFormalWear(player, ptarget))
 			{
-				sendHtmlMessage(player, "data/html/mods/Wedding_error_noformal.htm");
+				sendHtmlMessage(player, "data/html/mods/Wedding/Wedding_error_noformal.htm");
 				return false;
 			}
 		
 		// Check and reduce wedding price
 		if (player.getAdena() < Config.WEDDING_PRICE || ptarget.getAdena() < Config.WEDDING_PRICE)
 		{
-			sendHtmlMessage(player, "data/html/mods/Wedding_error_adena.htm");
+			sendHtmlMessage(player, "data/html/mods/Wedding/Wedding_error_adena.htm");
 			return false;
 		}
 		
@@ -251,15 +235,15 @@ public class L2WeddingManagerInstance extends L2NpcInstance
 		player.doCast(skill);
 		ptarget.doCast(skill);
 		
-		Broadcast.announceToOnlinePlayers("Congratulations to " + player.getName() + " and " + ptarget.getName() + "! They have been married.");
+		Announcements.announceToAll("Congratulations to " + player.getName() + " and " + ptarget.getName() + "! They have been married.");
 	}
 	
 	private void sendHtmlMessage(L2PcInstance player, String file)
 	{
-		final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
+		NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
 		html.setFile(file);
 		html.replace("%objectId%", getObjectId());
-		html.replace("%adenasCost%", StringUtil.formatNumber(Config.WEDDING_PRICE));
+		html.replace("%adenasCost%", Config.WEDDING_PRICE);
 		html.replace("%needOrNot%", Config.WEDDING_FORMALWEAR ? "will" : "won't");
 		player.sendPacket(html);
 	}

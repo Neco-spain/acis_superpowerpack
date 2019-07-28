@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.taskmanager.tasks;
 
 import java.io.File;
@@ -21,22 +7,28 @@ import javax.script.ScriptException;
 
 import net.sf.l2j.gameserver.scripting.L2ScriptEngineManager;
 import net.sf.l2j.gameserver.taskmanager.TaskManager.ExecutedTask;
+import net.sf.l2j.gameserver.taskmanager.models.Task;
 
 /**
  * @author janiii
  */
-public final class TaskScript extends ATask
+public class TaskScript extends Task
 {
 	private static final Logger _log = Logger.getLogger(TaskScript.class.getName());
+	public static final String NAME = "script";
 	
-	private static final String NAME = "script";
-	
+	/**
+	 * @see net.sf.l2j.gameserver.taskmanager.models.Task#getName()
+	 */
 	@Override
 	public String getName()
 	{
 		return NAME;
 	}
 	
+	/**
+	 * @see net.sf.l2j.gameserver.taskmanager.models.Task#onTimeElapsed(net.sf.l2j.gameserver.taskmanager.TaskManager.ExecutedTask)
+	 */
 	@Override
 	public void onTimeElapsed(ExecutedTask task)
 	{

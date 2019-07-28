@@ -1,20 +1,9 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.instancemanager;
 
 import java.io.File;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -23,6 +12,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import net.sf.l2j.Config;
+import net.sf.l2j.L2DatabaseFactory;
 import net.sf.l2j.gameserver.model.actor.L2Attackable;
 import net.sf.l2j.gameserver.model.actor.L2Character;
 import net.sf.l2j.gameserver.model.actor.instance.L2FeedableBeastInstance;
@@ -48,22 +38,21 @@ import org.w3c.dom.Node;
  * <li><u>disapearChance :</u> chance to dissapear when CW owner dies. Default : 50%</li>
  * <li><u>stageKills :</u> the basic number used to calculate random needed number of needed kills to rank up the CW. That number is used as a base, it takes a random number between 50% and 150% of that value. Default : 10</li>
  * </ul>
- * @author Micht, Tryskell
  */
 public class CursedWeaponsManager
 {
 	private static final Logger _log = Logger.getLogger(CursedWeaponsManager.class.getName());
-	
-	private final Map<Integer, CursedWeapon> _cursedWeapons = new HashMap<>();
 	
 	public static final CursedWeaponsManager getInstance()
 	{
 		return SingletonHolder._instance;
 	}
 	
+	private final Map<Integer, CursedWeapon> _cursedWeapons = new HashMap<>();
+	
 	public CursedWeaponsManager()
 	{
-		load();
+		init();
 	}
 	
 	public void reload()
@@ -73,10 +62,10 @@ public class CursedWeaponsManager
 			cw.endOfLife();
 		
 		_cursedWeapons.clear();
-		load();
+		init();
 	}
 	
-	private void load()
+	private void init()
 	{
 		if (!Config.ALLOW_CURSED_WEAPONS)
 		{
@@ -84,6 +73,15 @@ public class CursedWeaponsManager
 			return;
 		}
 		
+		load();
+		restore();
+	}
+	
+	/**
+	 * Load static data from XML.
+	 */
+	private void load()
+	{
 		try
 		{
 			File file = new File("./data/xml/cursed_weapons.xml");
@@ -136,19 +134,58 @@ public class CursedWeaponsManager
 						}
 					}
 					
-					// load data from SQL
-					cw.loadData();
-					
 					// Store cursed weapon
 					_cursedWeapons.put(id, cw);
 				}
 			}
-			
-			_log.info("CursedWeaponsManager: Loaded " + _cursedWeapons.size() + " cursed weapons.");
 		}
 		catch (Exception e)
 		{
 			_log.log(Level.SEVERE, "Error parsing cursed_weapons.xml: ", e);
+		}
+		_log.info("CursedWeaponsManager: Loaded " + _cursedWeapons.size() + " cursed weapons.");
+	}
+	
+	/**
+	 * Restore dynamic data from SQL.
+	 */
+	private void restore()
+	{
+		try (Connection con = L2DatabaseFactory.getInstance().getConnection())
+		{
+			PreparedStatement statement = con.prepareStatement("SELECT * FROM cursed_weapons");
+			ResultSet rset = statement.executeQuery();
+			
+			while (rset.next())
+			{
+				int itemId = rset.getInt("itemId");
+				int playerId = rset.getInt("playerId");
+				int playerKarma = rset.getInt("playerKarma");
+				int playerPkKills = rset.getInt("playerPkKills");
+				int nbKills = rset.getInt("nbKills");
+				int currentStage = rset.getInt("currentStage");
+				int numberBeforeNextStage = rset.getInt("numberBeforeNextStage");
+				int hungryTime = rset.getInt("hungryTime");
+				long endTime = rset.getLong("endTime");
+				
+				CursedWeapon cw = _cursedWeapons.get(itemId);
+				cw.setPlayerId(playerId);
+				cw.setPlayerKarma(playerKarma);
+				cw.setPlayerPkKills(playerPkKills);
+				cw.setNbKills(nbKills);
+				cw.setCurrentStage(currentStage);
+				cw.setNumberBeforeNextStage(numberBeforeNextStage);
+				cw.setHungryTime(hungryTime);
+				cw.setEndTime(endTime);
+				cw.reActivate(false);
+			}
+			
+			rset.close();
+			statement.close();
+		}
+		catch (Exception e)
+		{
+			_log.log(Level.WARNING, "Could not restore CursedWeapons data: " + e.getMessage(), e);
 		}
 	}
 	

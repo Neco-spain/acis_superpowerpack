@@ -1,22 +1,8 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.network.serverpackets;
 
 import java.util.List;
 
-import net.sf.l2j.commons.lang.StringUtil;
+import net.sf.l2j.util.StringUtil;
 
 public class ShowBoard extends L2GameServerPacket
 {
@@ -32,16 +18,16 @@ public class ShowBoard extends L2GameServerPacket
 	private final static String FRIENDS = "bypass _friendlist_0_";
 	private final static String ADDFAV = "bypass bbs_add_fav";
 	
-	private final StringBuilder _htmlCode = new StringBuilder();
+	private final StringBuilder _htmlCode;
 	
 	public ShowBoard(String htmlCode, String id)
 	{
-		StringUtil.append(_htmlCode, id, "\u0008", htmlCode);
+		_htmlCode = StringUtil.startAppend(500, id, "\u0008", htmlCode);
 	}
 	
 	public ShowBoard(List<String> arg)
 	{
-		_htmlCode.append("1002\u0008");
+		_htmlCode = StringUtil.startAppend(500, "1002\u0008");
 		for (String str : arg)
 			StringUtil.append(_htmlCode, str, " \u0008");
 	}

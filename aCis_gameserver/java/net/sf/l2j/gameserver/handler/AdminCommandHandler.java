@@ -1,18 +1,27 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.handler;
+
+import Extensions.AdminCommands.AdminAio;
+import Extensions.AdminCommands.AdminChatManager;
+import Extensions.AdminCommands.AdminClanFull;
+import Extensions.AdminCommands.AdminDarkOmen;
+import Extensions.AdminCommands.AdminDeport;
+import Extensions.AdminCommands.AdminEvents;
+import Extensions.AdminCommands.AdminGoHide;
+import Extensions.AdminCommands.AdminGod;
+import Extensions.AdminCommands.AdminLocations;
+import Extensions.AdminCommands.AdminMassRecall;
+import Extensions.AdminCommands.AdminNpcChat;
+import Extensions.AdminCommands.AdminOlympiadPoints;
+import Extensions.AdminCommands.AdminOlympiadStat;
+import Extensions.AdminCommands.AdminRecallAll;
+import Extensions.AdminCommands.AdminReuse;
+import Extensions.AdminCommands.AdminSendDonate;
+import Extensions.AdminCommands.AdminSetTeam;
+import Extensions.AdminCommands.AdminSurvey;
+import Extensions.AdminCommands.AdminVipCommands;
+import Extensions.AdminCommands.AdminWatchClan;
+import Extensions.AdminCommands.AdminWho;
+import Extensions.Balancer.Balancer;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -25,6 +34,7 @@ import net.sf.l2j.gameserver.handler.admincommandhandlers.AdminBuffs;
 import net.sf.l2j.gameserver.handler.admincommandhandlers.AdminCache;
 import net.sf.l2j.gameserver.handler.admincommandhandlers.AdminCamera;
 import net.sf.l2j.gameserver.handler.admincommandhandlers.AdminChangeAccessLevel;
+import net.sf.l2j.gameserver.handler.admincommandhandlers.AdminClassBalancer;
 import net.sf.l2j.gameserver.handler.admincommandhandlers.AdminCreateItem;
 import net.sf.l2j.gameserver.handler.admincommandhandlers.AdminCursedWeapons;
 import net.sf.l2j.gameserver.handler.admincommandhandlers.AdminDelete;
@@ -46,6 +56,7 @@ import net.sf.l2j.gameserver.handler.admincommandhandlers.AdminLevel;
 import net.sf.l2j.gameserver.handler.admincommandhandlers.AdminMaintenance;
 import net.sf.l2j.gameserver.handler.admincommandhandlers.AdminMammon;
 import net.sf.l2j.gameserver.handler.admincommandhandlers.AdminManor;
+import net.sf.l2j.gameserver.handler.admincommandhandlers.AdminMassHero;
 import net.sf.l2j.gameserver.handler.admincommandhandlers.AdminMenu;
 import net.sf.l2j.gameserver.handler.admincommandhandlers.AdminMonsterRace;
 import net.sf.l2j.gameserver.handler.admincommandhandlers.AdminMovieMaker;
@@ -55,15 +66,18 @@ import net.sf.l2j.gameserver.handler.admincommandhandlers.AdminPathNode;
 import net.sf.l2j.gameserver.handler.admincommandhandlers.AdminPetition;
 import net.sf.l2j.gameserver.handler.admincommandhandlers.AdminPledge;
 import net.sf.l2j.gameserver.handler.admincommandhandlers.AdminPolymorph;
+import net.sf.l2j.gameserver.handler.admincommandhandlers.AdminReload;
 import net.sf.l2j.gameserver.handler.admincommandhandlers.AdminRepairChar;
 import net.sf.l2j.gameserver.handler.admincommandhandlers.AdminRes;
 import net.sf.l2j.gameserver.handler.admincommandhandlers.AdminRideWyvern;
 import net.sf.l2j.gameserver.handler.admincommandhandlers.AdminShop;
 import net.sf.l2j.gameserver.handler.admincommandhandlers.AdminSiege;
 import net.sf.l2j.gameserver.handler.admincommandhandlers.AdminSkill;
+import net.sf.l2j.gameserver.handler.admincommandhandlers.AdminSkillsBalancer;
 import net.sf.l2j.gameserver.handler.admincommandhandlers.AdminSpawn;
 import net.sf.l2j.gameserver.handler.admincommandhandlers.AdminTarget;
 import net.sf.l2j.gameserver.handler.admincommandhandlers.AdminTeleport;
+import net.sf.l2j.gameserver.handler.admincommandhandlers.AdminUnblockIp;
 import net.sf.l2j.gameserver.handler.admincommandhandlers.AdminZone;
 
 public class AdminCommandHandler
@@ -78,6 +92,8 @@ public class AdminCommandHandler
 	protected AdminCommandHandler()
 	{
 		registerAdminCommandHandler(new AdminAdmin());
+		registerAdminCommandHandler(new AdminAio());
+		registerAdminCommandHandler(new AdminMassHero());
 		registerAdminCommandHandler(new AdminAnnouncements());
 		registerAdminCommandHandler(new AdminBan());
 		registerAdminCommandHandler(new AdminBookmark());
@@ -85,6 +101,7 @@ public class AdminCommandHandler
 		registerAdminCommandHandler(new AdminCache());
 		registerAdminCommandHandler(new AdminCamera());
 		registerAdminCommandHandler(new AdminChangeAccessLevel());
+		registerAdminCommandHandler(new AdminClassBalancer());
 		registerAdminCommandHandler(new AdminCreateItem());
 		registerAdminCommandHandler(new AdminCursedWeapons());
 		registerAdminCommandHandler(new AdminDelete());
@@ -115,16 +132,41 @@ public class AdminCommandHandler
 		registerAdminCommandHandler(new AdminPForge());
 		registerAdminCommandHandler(new AdminPledge());
 		registerAdminCommandHandler(new AdminPolymorph());
+		registerAdminCommandHandler(new AdminReload());
 		registerAdminCommandHandler(new AdminRepairChar());
 		registerAdminCommandHandler(new AdminRes());
 		registerAdminCommandHandler(new AdminRideWyvern());
 		registerAdminCommandHandler(new AdminShop());
 		registerAdminCommandHandler(new AdminSiege());
 		registerAdminCommandHandler(new AdminSkill());
+		registerAdminCommandHandler(new AdminSkillsBalancer());
 		registerAdminCommandHandler(new AdminSpawn());
 		registerAdminCommandHandler(new AdminTarget());
 		registerAdminCommandHandler(new AdminTeleport());
+		registerAdminCommandHandler(new AdminUnblockIp());
 		registerAdminCommandHandler(new AdminZone());
+		registerAdminCommandHandler(new Balancer());
+		/** Custom Admin Commands */
+		registerAdminCommandHandler(new AdminEvents());
+		registerAdminCommandHandler(new AdminChatManager());
+		registerAdminCommandHandler(new AdminSetTeam());
+		registerAdminCommandHandler(new AdminLocations());
+		registerAdminCommandHandler(new AdminReuse());
+		registerAdminCommandHandler(new AdminVipCommands());
+		registerAdminCommandHandler(new AdminSurvey());
+		registerAdminCommandHandler(new AdminSendDonate());
+		registerAdminCommandHandler(new AdminNpcChat());
+		registerAdminCommandHandler(new AdminRecallAll());
+		registerAdminCommandHandler(new AdminGod());
+		registerAdminCommandHandler(new AdminGoHide());
+		registerAdminCommandHandler(new AdminDeport());
+		registerAdminCommandHandler(new AdminWatchClan());
+		registerAdminCommandHandler(new AdminClanFull());
+		registerAdminCommandHandler(new AdminDarkOmen());
+		registerAdminCommandHandler(new AdminOlympiadStat());
+		registerAdminCommandHandler(new AdminOlympiadPoints());
+		registerAdminCommandHandler(new AdminWho());
+		registerAdminCommandHandler(new AdminMassRecall());
 	}
 	
 	public void registerAdminCommandHandler(IAdminCommandHandler handler)

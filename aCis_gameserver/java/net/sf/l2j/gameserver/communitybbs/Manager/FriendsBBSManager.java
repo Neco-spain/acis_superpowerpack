@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.communitybbs.Manager;
 
 import java.sql.Connection;
@@ -22,7 +8,6 @@ import java.util.StringTokenizer;
 import java.util.logging.Level;
 
 import net.sf.l2j.L2DatabaseFactory;
-import net.sf.l2j.commons.lang.StringUtil;
 import net.sf.l2j.gameserver.cache.HtmCache;
 import net.sf.l2j.gameserver.datatables.CharNameTable;
 import net.sf.l2j.gameserver.model.BlockList;
@@ -214,37 +199,48 @@ public class FriendsBBSManager extends BaseBBSManager
 		final List<Integer> list = activeChar.getFriendList();
 		final List<Integer> slist = activeChar.getSelectedFriendList();
 		
-		final StringBuilder sb = new StringBuilder();
-		
 		// Friendlist
-		for (Integer id : list)
+		if (list.isEmpty())
+			content = content.replaceAll("%friendslist%", "");
+		else
 		{
-			if (slist.contains(id))
-				continue;
+			String friends = "";
 			
-			String friendName = CharNameTable.getInstance().getNameById(id);
-			if (friendName == null)
-				continue;
+			for (Integer id : list)
+			{
+				if (slist.contains(id))
+					continue;
+				
+				String friendName = CharNameTable.getInstance().getNameById(id);
+				if (friendName == null)
+					continue;
+				
+				L2PcInstance friend = L2World.getInstance().getPlayer(friendName);
+				friends += "<a action=\"bypass _friend;select;" + id + "\">[Select]</a>&nbsp;" + friendName + " " + ((friend != null && friend.isOnline()) ? "(on)" : "(off)") + "<br1>";
+			}
 			
-			L2PcInstance friend = L2World.getInstance().getPlayer(friendName);
-			StringUtil.append(sb, "<a action=\"bypass _friend;select;", id, "\">[Select]</a>&nbsp;", friendName, " ", ((friend != null && friend.isOnline()) ? "(on)" : "(off)"), "<br1>");
+			content = content.replaceAll("%friendslist%", friends);
 		}
-		content = content.replaceAll("%friendslist%", sb.toString());
-		
-		// Cleanup sb.
-		sb.setLength(0);
 		
 		// Selected friendlist
-		for (Integer id : slist)
+		if (slist.isEmpty())
+			content = content.replaceAll("%selectedFriendsList%", "");
+		else
 		{
-			String friendName = CharNameTable.getInstance().getNameById(id);
-			if (friendName == null)
-				continue;
+			String selectedFriends = "";
 			
-			L2PcInstance friend = L2World.getInstance().getPlayer(friendName);
-			StringUtil.append(sb, "<a action=\"bypass _friend;deselect;", id, "\">[Deselect]</a>&nbsp;", friendName, " ", ((friend != null && friend.isOnline()) ? "(on)" : "(off)"), "<br1>");
+			for (Integer id : slist)
+			{
+				String friendName = CharNameTable.getInstance().getNameById(id);
+				if (friendName == null)
+					continue;
+				
+				L2PcInstance friend = L2World.getInstance().getPlayer(friendName);
+				selectedFriends += "<a action=\"bypass _friend;deselect;" + id + "\">[Deselect]</a>&nbsp;" + friendName + " " + ((friend != null && friend.isOnline()) ? "(on)" : "(off)") + "<br1>";
+			}
+			
+			content = content.replaceAll("%selectedFriendsList%", selectedFriends);
 		}
-		content = content.replaceAll("%selectedFriendsList%", sb.toString());
 		
 		// Delete button.
 		content = content.replaceAll("%deleteMSG%", (delMsg) ? FRIENDLIST_DELETE_BUTTON : "");
@@ -262,37 +258,48 @@ public class FriendsBBSManager extends BaseBBSManager
 		final List<Integer> list = activeChar.getBlockList().getBlockList();
 		final List<Integer> slist = activeChar.getSelectedBlocksList();
 		
-		final StringBuilder sb = new StringBuilder();
-		
 		// Blocklist
-		for (Integer id : list)
+		if (list.isEmpty())
+			content = content.replaceAll("%blocklist%", "");
+		else
 		{
-			if (slist.contains(id))
-				continue;
+			String selectedBlocks = "";
 			
-			String blockName = CharNameTable.getInstance().getNameById(id);
-			if (blockName == null)
-				continue;
+			for (Integer id : list)
+			{
+				if (slist.contains(id))
+					continue;
+				
+				String blockName = CharNameTable.getInstance().getNameById(id);
+				if (blockName == null)
+					continue;
+				
+				L2PcInstance block = L2World.getInstance().getPlayer(blockName);
+				selectedBlocks += "<a action=\"bypass _block;select;" + id + "\">[Select]</a>&nbsp;" + blockName + " " + ((block != null && block.isOnline()) ? "(on)" : "(off)") + "<br1>";
+			}
 			
-			L2PcInstance block = L2World.getInstance().getPlayer(blockName);
-			StringUtil.append(sb, "<a action=\"bypass _block;select;", id, "\">[Select]</a>&nbsp;", blockName, " ", ((block != null && block.isOnline()) ? "(on)" : "(off)"), "<br1>");
+			content = content.replaceAll("%blocklist%", selectedBlocks);
 		}
-		content = content.replaceAll("%blocklist%", sb.toString());
-		
-		// Cleanup sb.
-		sb.setLength(0);
 		
 		// Selected Blocklist
-		for (Integer id : slist)
+		if (slist.isEmpty())
+			content = content.replaceAll("%selectedBlocksList%", "");
+		else
 		{
-			String blockName = CharNameTable.getInstance().getNameById(id);
-			if (blockName == null)
-				continue;
+			String selectedBlocks = "";
 			
-			L2PcInstance block = L2World.getInstance().getPlayer(blockName);
-			StringUtil.append(sb, "<a action=\"bypass _block;deselect;", id, "\">[Deselect]</a>&nbsp;", blockName, " ", ((block != null && block.isOnline()) ? "(on)" : "(off)"), "<br1>");
+			for (Integer id : slist)
+			{
+				String blockName = CharNameTable.getInstance().getNameById(id);
+				if (blockName == null)
+					continue;
+				
+				L2PcInstance block = L2World.getInstance().getPlayer(blockName);
+				selectedBlocks += "<a action=\"bypass _block;deselect;" + id + "\">[Deselect]</a>&nbsp;" + blockName + " " + ((block != null && block.isOnline()) ? "(on)" : "(off)") + "<br1>";
+			}
+			
+			content = content.replaceAll("%selectedBlocksList%", selectedBlocks);
 		}
-		content = content.replaceAll("%selectedBlocksList%", sb.toString());
 		
 		// Delete button.
 		content = content.replaceAll("%deleteMSG%", (delMsg) ? BLOCKLIST_DELETE_BUTTON : "");
@@ -306,20 +313,20 @@ public class FriendsBBSManager extends BaseBBSManager
 		if (content == null)
 			return;
 		
-		final StringBuilder sb = new StringBuilder();
+		StringBuilder toList = new StringBuilder();
 		for (int id : activeChar.getSelectedFriendList())
 		{
 			String friendName = CharNameTable.getInstance().getNameById(id);
 			if (friendName == null)
 				continue;
 			
-			if (sb.length() > 0)
-				sb.append(";");
+			if (toList.length() > 0)
+				toList.append(";");
 			
-			sb.append(friendName);
+			toList.append(friendName);
 		}
 		
-		content = content.replaceAll("%list%", sb.toString());
+		content = content.replaceAll("%list%", toList.toString());
 		
 		separateAndSend(content, activeChar);
 	}

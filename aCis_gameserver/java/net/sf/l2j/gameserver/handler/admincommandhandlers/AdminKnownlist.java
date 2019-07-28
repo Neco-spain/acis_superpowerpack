@@ -1,33 +1,17 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.handler.admincommandhandlers;
 
 import java.util.Collection;
 import java.util.StringTokenizer;
 
-import net.sf.l2j.commons.lang.StringUtil;
 import net.sf.l2j.gameserver.handler.IAdminCommandHandler;
 import net.sf.l2j.gameserver.model.L2Object;
 import net.sf.l2j.gameserver.model.L2World;
 import net.sf.l2j.gameserver.model.actor.instance.L2PcInstance;
-import net.sf.l2j.gameserver.model.actor.knownlist.ObjectKnownList;
 import net.sf.l2j.gameserver.network.serverpackets.NpcHtmlMessage;
+import net.sf.l2j.util.StringUtil;
 
 /**
  * Handles visibility over target's knownlist, offering details about current target's vicinity.
- * @author Tryskell
  */
 public class AdminKnownlist implements IAdminCommandHandler
 {
@@ -70,21 +54,22 @@ public class AdminKnownlist implements IAdminCommandHandler
 					target = activeChar;
 			}
 			
-			final ObjectKnownList knownlist = target.getKnownList();
-			final Collection<L2Object> list = knownlist.getKnownObjects();
+			final Collection<L2Object> knownlist = target.getKnownList().getKnownObjects();
+			
+			NpcHtmlMessage adminReply = new NpcHtmlMessage(0);
+			adminReply.setFile("data/html/admin/knownlist.htm");
 			
 			// Generate data.
-			final StringBuilder sb = new StringBuilder(list.size() * 150);
-			for (L2Object object : list)
-				StringUtil.append(sb, "<tr><td>", object.getName(), "</td><td>", object.getClass().getSimpleName(), "</td></tr>");
+			final StringBuilder replyMSG = new StringBuilder(knownlist.size() * 200);
 			
-			final NpcHtmlMessage html = new NpcHtmlMessage(0);
-			html.setFile("data/html/admin/knownlist.htm");
-			html.replace("%target%", target.getName());
-			html.replace("%type%", knownlist.getClass().getSimpleName());
-			html.replace("%size%", list.size());
-			html.replace("%knownlist%", sb.toString());
-			activeChar.sendPacket(html);
+			for (L2Object object : knownlist)
+			{
+				StringUtil.append(replyMSG, "<tr><td>" + object.getName() + " [" + object.getClass().getSimpleName() + "]</td></tr>");
+			}
+			adminReply.replace("%target%", target.getName());
+			adminReply.replace("%size%", knownlist.size());
+			adminReply.replace("%knownlist%", replyMSG.toString());
+			activeChar.sendPacket(adminReply);
 		}
 		return true;
 	}

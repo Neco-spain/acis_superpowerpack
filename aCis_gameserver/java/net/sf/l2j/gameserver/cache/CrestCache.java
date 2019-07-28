@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.cache;
 
 import java.io.File;
@@ -19,155 +5,217 @@ import java.io.FileFilter;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.util.HashMap;
-import java.util.Map;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import net.sf.l2j.L2DatabaseFactory;
+import net.sf.l2j.commons.io.filters.BmpFilter;
+import net.sf.l2j.commons.io.filters.OldPledgeFilter;
+import net.sf.l2j.gameserver.datatables.ClanTable;
+import net.sf.l2j.gameserver.idfactory.IdFactory;
+import net.sf.l2j.gameserver.model.L2Clan;
+
 /**
- * @author Layane, reworked by Java-man, Hasha
+ * @author Layane, reworked by Java-man
  */
 public class CrestCache
 {
 	private static final Logger _log = Logger.getLogger(CrestCache.class.getName());
 	
-	private static final String CRESTS_DIR = "./data/crests/";
+	private final static ArrayList<CrestData> cache = new ArrayList<>();
 	
-	private final Map<Integer, byte[]> _crests;
-	private final FileFilter _ddsFilter;
+	private final static String CRESTS_DIR = "./data/crests/";
+	
+	private final static FileFilter bmpFilter = new BmpFilter();
+	private final static FileFilter oldPledgeFilter = new OldPledgeFilter();
 	
 	public static enum CrestType
 	{
-		PLEDGE("Crest_", 256),
-		PLEDGE_LARGE("LargeCrest_", 2176),
-		ALLY("AllyCrest_", 192);
+		PLEDGE("Crest_"),
+		PLEDGE_LARGE("LargeCrest_"),
+		PLEDGE_OLD("Pledge_"),
+		ALLY("AllyCrest_");
 		
-		final String _prefix;
-		final int _size;
+		private final String _dirPrefix;
 		
-		private CrestType(String prefix, int size)
+		CrestType(String dirPrefix)
 		{
-			_prefix = prefix;
-			_size = size;
+			_dirPrefix = dirPrefix;
+		}
+		
+		public String getDirPrefix()
+		{
+			return _dirPrefix;
 		}
 	}
 	
-	public static CrestCache getInstance()
+	static
 	{
-		return SingletonHolder._instance;
+		if (!new File(CRESTS_DIR).mkdirs())
+			convertOldPledgeFiles();
 	}
 	
-	public CrestCache()
+	public static void load()
 	{
-		_crests = new HashMap<>();
-		_ddsFilter = new DdsFilter();
+		cache.clear();
 		
-		load();
-	}
-	
-	public final void reload()
-	{
-		_crests.clear();
+		File[] files = new File(CRESTS_DIR).listFiles(bmpFilter);
+		if (files == null)
+			files = new File[0];
 		
-		load();
-	}
-	
-	private final void load()
-	{
-		final File directory = new File(CRESTS_DIR);
-		directory.mkdirs();
+		String fileName;
+		byte[] content;
 		
-		for (File file : directory.listFiles(_ddsFilter))
+		CrestType crestType = null;
+		int crestId = 0;
+		
+		for (File file : files)
 		{
-			byte[] data;
+			fileName = file.getName();
 			try (RandomAccessFile f = new RandomAccessFile(file, "r"))
 			{
-				data = new byte[(int) f.length()];
-				f.readFully(data);
+				content = new byte[(int) f.length()];
+				f.readFully(content);
+				
+				for (CrestType type : CrestType.values())
+				{
+					if (fileName.startsWith(type.getDirPrefix()))
+					{
+						crestType = type;
+						crestId = Integer.valueOf(fileName.substring(type.getDirPrefix().length(), fileName.length() - 4));
+					}
+				}
+				cache.add(new CrestData(crestType, crestId, content));
 			}
 			catch (Exception e)
 			{
-				_log.warning("CrestCache: Error loading crest file: " + file.getName());
-				continue;
-			}
-			
-			final String fileName = file.getName();
-			
-			for (CrestType type : CrestType.values())
-			{
-				if (!fileName.startsWith(type._prefix))
-					continue;
-				
-				_crests.put(Integer.valueOf(fileName.substring(type._prefix.length(), fileName.length() - 4)), data);
+				_log.log(Level.WARNING, "Problem with loading crest bmp file: " + file, e);
 			}
 		}
 		
-		_log.info("CrestCache: Loaded " + _crests.size() + " crest files.");
+		_log.info("Cache[Crest]: " + cache.size() + " files loaded.");
 	}
 	
-	public final byte[] getCrest(CrestType type, int id)
+	public static void convertOldPledgeFiles()
 	{
-		// get crest data
-		byte[] data = _crests.get(id);
+		int clanId, newId;
+		L2Clan clan;
 		
-		// crest data is not required type, return
-		if (data == null || data.length != type._size)
-			return null;
-		
-		return data;
-	}
-	
-	public final void removeCrest(CrestType type, int id)
-	{
-		// get crest data
-		byte[] data = _crests.get(id);
-		
-		// crest data is not required type, return
-		if (data == null || data.length != type._size)
-			return;
-		
-		// remove from cache
-		_crests.remove(id);
-		
-		// delete file
-		final File file = new File(CRESTS_DIR + type._prefix + id + ".dds");
-		if (!file.delete())
-			_log.warning("CrestCache: Error deleting crest file: " + file.getName());
-	}
-	
-	public final boolean saveCrest(CrestType type, int id, byte[] data)
-	{
-		// create file
-		File file = new File(CRESTS_DIR + type._prefix + id + ".dds");
-		
-		try (FileOutputStream out = new FileOutputStream(file))
+		final File[] files = new File(CRESTS_DIR).listFiles(oldPledgeFilter);
+		for (File file : files)
 		{
-			// save crest
+			clanId = Integer.parseInt(file.getName().substring(7, file.getName().length() - 4));
+			newId = IdFactory.getInstance().getNextId();
+			clan = ClanTable.getInstance().getClan(clanId);
+			
+			_log.info("Found old crest file \"" + file.getName() + "\" for clanId " + clanId);
+			
+			if (clan != null)
+			{
+				removeCrest(CrestType.PLEDGE_LARGE, clan.getCrestId());
+				
+				file.renameTo(new File(CRESTS_DIR + "Crest_" + newId + ".bmp"));
+				_log.info("Renamed Clan crest to new format: Crest_" + newId + ".bmp");
+				
+				try (Connection con = L2DatabaseFactory.getInstance().getConnection())
+				{
+					PreparedStatement statement = con.prepareStatement("UPDATE clan_data SET crest_id = ? WHERE clan_id = ?");
+					statement.setInt(1, newId);
+					statement.setInt(2, clan.getClanId());
+					statement.executeUpdate();
+					statement.close();
+				}
+				catch (SQLException e)
+				{
+					_log.log(Level.WARNING, "Could not update the crest id:", e);
+				}
+				
+				clan.setCrestId(newId);
+			}
+			else
+			{
+				_log.info("Clan Id: " + clanId + " does not exist in table.. deleting.");
+				file.delete();
+			}
+		}
+	}
+	
+	public static byte[] getCrest(CrestType crestType, int id)
+	{
+		for (CrestData crest : cache)
+			if (crest.getCrestType() == crestType && crest.getCrestId() == id)
+				return crest.getHash();
+		
+		return null;
+	}
+	
+	public static void removeCrest(CrestType crestType, int id)
+	{
+		String crestDirPrefix = crestType.getDirPrefix();
+		
+		if (!crestDirPrefix.equals("Pledge_"))
+		{
+			for (CrestData crestData : cache)
+				if (crestData.getCrestType() == crestType && crestData.getCrestId() == id)
+				{
+					cache.remove(crestData);
+					break;
+				}
+		}
+		
+		File crestFile = new File(CRESTS_DIR + crestDirPrefix + id + ".bmp");
+		if (!crestFile.delete())
+			_log.log(Level.WARNING, "CrestCache: Failed to delete " + crestDirPrefix + id + ".bmp");
+	}
+	
+	public static boolean saveCrest(CrestType crestType, int newId, byte[] data)
+	{
+		File crestFile = new File(CRESTS_DIR + crestType.getDirPrefix() + newId + ".bmp");
+		try (FileOutputStream out = new FileOutputStream(crestFile))
+		{
 			out.write(data);
 			
-			// put crest to cache
-			_crests.put(id, data);
+			cache.add(new CrestData(crestType, newId, data));
 			
 			return true;
 		}
 		catch (IOException e)
 		{
-			_log.warning("CrestCache: Error saving crest file: " + file.getName());
+			_log.log(Level.INFO, "Error saving pledge crest" + crestFile + ":", e);
 			return false;
 		}
 	}
 	
-	private static class SingletonHolder
+	private static class CrestData
 	{
-		protected static final CrestCache _instance = new CrestCache();
-	}
-	
-	protected class DdsFilter implements FileFilter
-	{
-		@Override
-		public boolean accept(File file)
+		private final CrestType _crestType;
+		private final int _crestId;
+		private final byte[] _hash;
+		
+		CrestData(CrestType crestType, int crestId, byte[] hash)
 		{
-			// client<>server crest transfer is using images in DDS file format (DXT1)
-			return file.getName().endsWith(".dds");
+			_crestType = crestType;
+			_crestId = crestId;
+			_hash = hash;
+		}
+		
+		public CrestType getCrestType()
+		{
+			return _crestType;
+		}
+		
+		public int getCrestId()
+		{
+			return _crestId;
+		}
+		
+		public byte[] getHash()
+		{
+			return _hash;
 		}
 	}
 }

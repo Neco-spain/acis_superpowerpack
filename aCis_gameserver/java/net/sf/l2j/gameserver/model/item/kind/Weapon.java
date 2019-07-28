@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.model.item.kind;
 
 import java.util.ArrayList;
@@ -35,7 +21,7 @@ import net.sf.l2j.gameserver.skills.conditions.Condition;
 import net.sf.l2j.gameserver.skills.conditions.ConditionGameChance;
 import net.sf.l2j.gameserver.templates.StatsSet;
 import net.sf.l2j.gameserver.templates.skills.L2SkillType;
-import net.sf.l2j.util.Rnd;
+import net.sf.l2j.util.StringUtil;
 
 /**
  * This class is dedicated to the management of weapons.
@@ -47,8 +33,6 @@ public final class Weapon extends Item
 	private final int _soulShotCount;
 	private final int _spiritShotCount;
 	private final int _mpConsume;
-	private final int _mpConsumeReduceRate;
-	private final int _mpConsumeReduceValue;
 	private final boolean _isMagical;
 	
 	private SkillHolder _enchant4Skill = null; // skill that activates when item is enchanted +4 (for duals)
@@ -92,9 +76,6 @@ public final class Weapon extends Item
 		_spiritShotCount = set.getInteger("spiritshots", 0);
 		_rndDam = set.getInteger("random_damage", 0);
 		_mpConsume = set.getInteger("mp_consume", 0);
-		String[] reduce = set.getString("mp_consume_reduce", "0,0").split(",");
-		_mpConsumeReduceRate = Integer.parseInt(reduce[0]);
-		_mpConsumeReduceValue = Integer.parseInt(reduce[1]);
 		_reuseDelay = set.getInteger("reuse_delay", 0);
 		_isMagical = set.getBool("is_magical", false);
 		
@@ -119,7 +100,7 @@ public final class Weapon extends Item
 				catch (Exception nfe)
 				{
 					// Incorrect syntax, dont add new skill
-					_log.info("> Couldnt parse " + skill + " in weapon enchant skills! item " + toString());
+					_log.info(StringUtil.concat("> Couldnt parse ", skill, " in weapon enchant skills! item ", toString()));
 				}
 				if (id > 0 && level > 0)
 					_enchant4Skill = new SkillHolder(id, level);
@@ -146,7 +127,7 @@ public final class Weapon extends Item
 				catch (Exception nfe)
 				{
 					// Incorrect syntax, dont add new skill
-					_log.info("> Couldnt parse " + skill + " in weapon oncast skills! item " + toString());
+					_log.info(StringUtil.concat("> Couldnt parse ", skill, " in weapon oncast skills! item ", toString()));
 				}
 				if (id > 0 && level > 0 && chance > 0)
 				{
@@ -177,7 +158,7 @@ public final class Weapon extends Item
 				catch (Exception nfe)
 				{
 					// Incorrect syntax, dont add new skill
-					_log.info("> Couldnt parse " + skill + " in weapon oncrit skills! item " + toString());
+					_log.info(StringUtil.concat("> Couldnt parse ", skill, " in weapon oncrit skills! item ", toString()));
 				}
 				if (id > 0 && level > 0 && chance > 0)
 				{
@@ -268,9 +249,6 @@ public final class Weapon extends Item
 	 */
 	public int getMpConsume()
 	{
-		if (_mpConsumeReduceRate > 0 && Rnd.get(100) < _mpConsumeReduceRate)
-			return _mpConsumeReduceValue;
-		
 		return _mpConsume;
 	}
 	

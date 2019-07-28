@@ -1,21 +1,3 @@
-/*
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2, or (at your option)
- * any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
- * 02111-1307, USA.
- *
- * http://www.gnu.org/copyleft/gpl.html
- */
 package net.sf.l2j.gameserver.datatables;
 
 import java.sql.Connection;
@@ -31,12 +13,10 @@ import java.util.logging.Logger;
 
 import net.sf.l2j.Config;
 import net.sf.l2j.L2DatabaseFactory;
-import net.sf.l2j.commons.lang.StringUtil;
 import net.sf.l2j.gameserver.model.holder.BuffSkillHolder;
 
 /**
  * This class stores players' buff schemes into _schemesTable.
- * @author House, Tryskell
  */
 public class BufferTable
 {
@@ -108,17 +88,20 @@ public class BufferTable
 				for (Map.Entry<String, ArrayList<Integer>> scheme : player.getValue().entrySet())
 				{
 					// Build a String composed of skill ids seperated by a ",".
-					final StringBuilder sb = new StringBuilder();
+					StringBuilder skills = new StringBuilder();
 					for (int skillId : scheme.getValue())
-						StringUtil.append(sb, skillId, ",");
+					{
+						skills.append(skillId);
+						skills.append(",");
+					}
 					
 					// Delete the last "," : must be called only if there is something to delete !
-					if (sb.length() > 0)
-						sb.setLength(sb.length() - 1);
+					if (skills.length() > 0)
+						skills.setLength(skills.length() - 1);
 					
 					st.setInt(1, player.getKey());
 					st.setString(2, scheme.getKey());
-					st.setString(3, sb.toString());
+					st.setString(3, skills.toString());
 					st.executeUpdate();
 					st.clearParameters();
 				}

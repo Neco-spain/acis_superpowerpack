@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.loginserver;
 
 import java.io.File;
@@ -28,9 +14,10 @@ import java.util.logging.Logger;
 import net.sf.l2j.Config;
 import net.sf.l2j.L2DatabaseFactory;
 import net.sf.l2j.Server;
-import net.sf.l2j.commons.lang.StringUtil;
-import net.sf.l2j.commons.mmocore.SelectorConfig;
-import net.sf.l2j.commons.mmocore.SelectorThread;
+import net.sf.l2j.util.Util;
+
+import org.mmocore.network.SelectorConfig;
+import org.mmocore.network.SelectorThread;
 
 /**
  * @author KenM
@@ -72,7 +59,7 @@ public class L2LoginServer
 		LogManager.getLogManager().readConfiguration(is);
 		is.close();
 		
-		StringUtil.printSection("aCis");
+		Util.printSection("L2JxTreme");
 		
 		// Initialize config
 		Config.load();
@@ -80,14 +67,14 @@ public class L2LoginServer
 		// Factories
 		L2DatabaseFactory.getInstance();
 		
-		StringUtil.printSection("LoginController");
+		Util.printSection("LoginController");
 		LoginController.load();
 		GameServerTable.getInstance();
 		
-		StringUtil.printSection("Ban List");
+		Util.printSection("Ban List");
 		loadBanFile();
 		
-		StringUtil.printSection("IP, Ports & Socket infos");
+		Util.printSection("IP, Ports & Socket infos");
 		InetAddress bindAddress = null;
 		if (!Config.LOGIN_BIND_ADDRESS.equals("*"))
 		{
@@ -98,8 +85,6 @@ public class L2LoginServer
 			catch (UnknownHostException e1)
 			{
 				_log.severe("WARNING: The LoginServer bind address is invalid, using all available IPs. Reason: " + e1.getMessage());
-				if (Config.DEVELOPER)
-					e1.printStackTrace();
 			}
 		}
 		
@@ -118,9 +103,6 @@ public class L2LoginServer
 		catch (IOException e)
 		{
 			_log.severe("FATAL: Failed to open selector. Reason: " + e.getMessage());
-			if (Config.DEVELOPER)
-				e.printStackTrace();
-			
 			System.exit(1);
 		}
 		
@@ -133,9 +115,6 @@ public class L2LoginServer
 		catch (IOException e)
 		{
 			_log.severe("FATAL: Failed to start the gameserver listener. Reason: " + e.getMessage());
-			if (Config.DEVELOPER)
-				e.printStackTrace();
-			
 			System.exit(1);
 		}
 		
@@ -146,15 +125,12 @@ public class L2LoginServer
 		catch (IOException e)
 		{
 			_log.severe("FATAL: Failed to open server socket. Reason: " + e.getMessage());
-			if (Config.DEVELOPER)
-				e.printStackTrace();
-			
 			System.exit(1);
 		}
 		_selectorThread.start();
 		_log.info("Loginserver ready on " + (bindAddress == null ? "*" : bindAddress.getHostAddress()) + ":" + Config.PORT_LOGIN);
 		
-		StringUtil.printSection("Waiting for gameserver answer");
+		Util.printSection("Waiting for gameserver answer");
 	}
 	
 	public GameServerListener getGameServerListener()
@@ -217,8 +193,6 @@ public class L2LoginServer
 			catch (IOException e)
 			{
 				_log.warning("Error while reading banned_ip.cfg. Details: " + e.getMessage());
-				if (Config.DEVELOPER)
-					e.printStackTrace();
 			}
 			_log.info("Loaded " + LoginController.getInstance().getBannedIps().size() + " IP(s) from banned_ip.cfg.");
 		}

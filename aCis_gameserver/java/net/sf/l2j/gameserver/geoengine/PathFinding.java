@@ -81,6 +81,7 @@ public abstract class PathFinding
 	
 	/**
 	 * Returns the list of location objects as a result of complete path calculation.
+	 * 
 	 * @param ox : origin x
 	 * @param oy : origin y
 	 * @param oz : origin z
@@ -94,6 +95,7 @@ public abstract class PathFinding
 	
 	/**
 	 * Check line of sight from L2Object to L2Object.
+	 * 
 	 * @param origin : The origin object.
 	 * @param target : The target object.
 	 * @return boolean : True if origin can see target
@@ -103,16 +105,17 @@ public abstract class PathFinding
 		int oheight = 0;
 		if (origin instanceof L2Character)
 			oheight = ((L2Character) origin).getTemplate().getCollisionHeight() * 2; // real height = collision height * 2
-			
+		
 		int theight = 0;
 		if (target instanceof L2Character)
 			theight = ((L2Character) target).getTemplate().getCollisionHeight() * 2; // real height = collision height * 2
-			
+		
 		return canSeeTarget(origin.getX(), origin.getY(), origin.getZ(), oheight, target.getX(), target.getY(), target.getZ(), theight);
 	}
 	
 	/**
 	 * Check line of sight from L2Object to Point3D.
+	 * 
 	 * @param origin : The origin object.
 	 * @param position : The target position.
 	 * @return boolean : True if object can see position
@@ -122,12 +125,13 @@ public abstract class PathFinding
 		int height = 0;
 		if (origin instanceof L2Character)
 			height = ((L2Character) origin).getTemplate().getCollisionHeight(); // real height = collision height * 2
-			
+		
 		return canSeeTarget(origin.getX(), origin.getY(), origin.getZ(), height, position.getX(), position.getY(), position.getZ(), 0);
 	}
 	
 	/**
-	 * Check line of sight from coordinates to coordinates.
+	 * Check line of sight from coordinates to coordinates. 
+	 * 
 	 * @param ox : origin X coord
 	 * @param oy : origin Y coord
 	 * @param oz : origin Z coord
@@ -141,7 +145,8 @@ public abstract class PathFinding
 	public abstract boolean canSeeTarget(int ox, int oy, int oz, int oheight, int tx, int ty, int tz, int theight);
 	
 	/**
-	 * Check movement from coordinates to coordinates.
+	 * Check movement from coordinates to coordinates. 
+	 * 
 	 * @param ox : origin X coord
 	 * @param oy : origin Y coord
 	 * @param oz : origin Z coord
@@ -153,7 +158,8 @@ public abstract class PathFinding
 	public abstract boolean canMoveToTarget(int ox, int oy, int oz, int tx, int ty, int tz);
 	
 	/**
-	 * Check movement from origin to target. Returns last available point in the checked path.
+	 * Check movement from origin to target. Returns last available point in the checked path. 
+	 * 
 	 * @param ox : origin X coord
 	 * @param oy : origin Y coord
 	 * @param oz : origin Z coord
@@ -166,12 +172,14 @@ public abstract class PathFinding
 	
 	/**
 	 * Return pathfinding stats, useful for getting information about pathfinding status.
+	 * 
 	 * @return List<String> : stats
 	 */
 	public abstract List<String> getStat();
 	
 	/**
 	 * Add new item to drop list for debug purpose.
+	 * 
 	 * @param id : Item id
 	 * @param count : Item count
 	 * @param loc : Item location

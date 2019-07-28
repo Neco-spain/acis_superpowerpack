@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.skills.conditions;
 
 import net.sf.l2j.gameserver.skills.Env;
@@ -22,7 +8,7 @@ import net.sf.l2j.gameserver.skills.effects.EffectSeed;
  */
 public class ConditionElementSeed extends Condition
 {
-	private static int[] SEED_SKILLS =
+	private static int[] seedSkills =
 	{
 		1285,
 		1286,
@@ -33,6 +19,17 @@ public class ConditionElementSeed extends Condition
 	public ConditionElementSeed(int[] seeds)
 	{
 		_requiredSeeds = seeds;
+		// if (Config.DEVELOPER) System.out.println("Required seeds: " + _requiredSeeds[0] + ", " + _requiredSeeds[1] + ", " + _requiredSeeds[2]+ ", " + _requiredSeeds[3]+ ", " + _requiredSeeds[4]);
+	}
+	
+	ConditionElementSeed(int fire, int water, int wind, int various, int any)
+	{
+		_requiredSeeds = new int[5];
+		_requiredSeeds[0] = fire;
+		_requiredSeeds[1] = water;
+		_requiredSeeds[2] = wind;
+		_requiredSeeds[3] = various;
+		_requiredSeeds[4] = any;
 	}
 	
 	@Override
@@ -41,13 +38,14 @@ public class ConditionElementSeed extends Condition
 		int[] Seeds = new int[3];
 		for (int i = 0; i < Seeds.length; i++)
 		{
-			Seeds[i] = (env.getCharacter().getFirstEffect(SEED_SKILLS[i]) instanceof EffectSeed ? ((EffectSeed) env.getCharacter().getFirstEffect(SEED_SKILLS[i])).getPower() : 0);
+			Seeds[i] = (env.getCharacter().getFirstEffect(seedSkills[i]) instanceof EffectSeed ? ((EffectSeed) env.getCharacter().getFirstEffect(seedSkills[i])).getPower() : 0);
 			if (Seeds[i] >= _requiredSeeds[i])
 				Seeds[i] -= _requiredSeeds[i];
 			else
 				return false;
 		}
 		
+		// if (Config.DEVELOPER) System.out.println("Seeds: " + Seeds[0] + ", " + Seeds[1] + ", " + Seeds[2]);
 		if (_requiredSeeds[3] > 0)
 		{
 			int count = 0;

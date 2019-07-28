@@ -1,5 +1,6 @@
 @echo off
-title aCis gameserver console
+color 9f
+title L2JxTreme gameserver console
 :start
 REM -------------------------------------
 REM Default parameters for a basic server.

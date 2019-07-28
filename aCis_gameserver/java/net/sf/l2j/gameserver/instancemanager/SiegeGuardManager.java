@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.instancemanager;
 
 import java.sql.Connection;
@@ -119,7 +105,8 @@ public class SiegeGuardManager
 	}
 	
 	/**
-	 * Remove mercs.
+	 * Remove mercs.<BR>
+	 * <BR>
 	 */
 	public void removeMercs()
 	{
@@ -170,7 +157,8 @@ public class SiegeGuardManager
 	}
 	
 	/**
-	 * Unspawn guards.
+	 * Unspawn guards.<BR>
+	 * <BR>
 	 */
 	public void unspawnSiegeGuard()
 	{
@@ -199,24 +187,28 @@ public class SiegeGuardManager
 			
 			ResultSet rs = statement.executeQuery();
 			
+			L2Spawn spawn1;
+			NpcTemplate template1;
+			
 			while (rs.next())
 			{
-				NpcTemplate template = NpcTable.getInstance().getTemplate(rs.getInt("npcId"));
-				if (template != null)
+				template1 = NpcTable.getInstance().getTemplate(rs.getInt("npcId"));
+				if (template1 != null)
 				{
-					L2Spawn spawn = new L2Spawn(template);
-					spawn.setLocx(rs.getInt("x"));
-					spawn.setLocy(rs.getInt("y"));
-					spawn.setLocz(rs.getInt("z"));
-					spawn.setHeading(rs.getInt("heading"));
-					spawn.setRespawnDelay(rs.getInt("respawnDelay"));
+					spawn1 = new L2Spawn(template1);
+					spawn1.setLocx(rs.getInt("x"));
+					spawn1.setLocy(rs.getInt("y"));
+					spawn1.setLocz(rs.getInt("z"));
+					spawn1.setHeading(rs.getInt("heading"));
+					spawn1.setRespawnDelay(rs.getInt("respawnDelay"));
 					
-					_siegeGuardSpawn.add(spawn);
+					_siegeGuardSpawn.add(spawn1);
 				}
 				else
+				{
 					_log.warning("Missing npc data in npc table for id: " + rs.getInt("npcId"));
+				}
 			}
-			rs.close();
 			statement.close();
 		}
 		catch (Exception e)

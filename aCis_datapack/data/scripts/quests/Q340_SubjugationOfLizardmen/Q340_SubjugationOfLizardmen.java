@@ -1,15 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package quests.Q340_SubjugationOfLizardmen;
 
 import net.sf.l2j.gameserver.model.actor.L2Npc;
@@ -42,7 +30,7 @@ public class Q340_SubjugationOfLizardmen extends Quest
 		addStartNpc(WEISZ);
 		addTalkId(WEISZ, ADONIUS, LEVIAN, CHEST);
 		
-		addKillId(20008, 20010, 20014, 20024, 20027, 20030, 25146);
+		addKillId(20008, 20010, 20014, 20357, 21100, 20356, 21101, 25146);
 	}
 	
 	@Override
@@ -184,6 +172,13 @@ public class Q340_SubjugationOfLizardmen extends Quest
 	@Override
 	public String onKill(L2Npc npc, L2PcInstance player, boolean isPet)
 	{
+		// Bifron's Chest.
+		if (npc.getNpcId() == 25146)
+		{
+			addSpawn(CHEST, npc, false, 30000, false);
+			return null;
+		}
+		
 		QuestState st = checkPlayerState(player, npc, STATE_STARTED);
 		if (st == null)
 			return null;
@@ -191,32 +186,21 @@ public class Q340_SubjugationOfLizardmen extends Quest
 		switch (npc.getNpcId())
 		{
 			case 20008:
-				if (st.getInt("cond") == 1)
-					st.dropItems(CARGO, 1, 30, 500000);
-				break;
-			
 			case 20010:
-				if (st.getInt("cond") == 1)
-					st.dropItems(CARGO, 1, 30, 520000);
-				break;
-			
 			case 20014:
 				if (st.getInt("cond") == 1)
-					st.dropItems(CARGO, 1, 30, 550000);
+					st.dropItems(CARGO, 1, 30, 400000);
 				break;
 			
-			case 20024:
-			case 20027:
-			case 20030:
+			case 20357:
+			case 21100:
+			case 20356:
+			case 21101:
 				if (st.getInt("cond") == 3)
 				{
-					if (st.dropItems(HOLY, 1, 1, 100000))
-						st.dropItems(ROSARY, 1, 1, 100000);
+					st.dropItems(HOLY, 1, 1, 150000);
+					st.dropItems(ROSARY, 1, 1, 150000);
 				}
-				break;
-			
-			case 25146:
-				addSpawn(CHEST, npc, false, 30000, false);
 				break;
 		}
 		return null;

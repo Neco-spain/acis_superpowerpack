@@ -1,15 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package quests.Q354_ConquestOfAlligatorIsland;
 
 import java.util.HashMap;
@@ -37,7 +25,7 @@ public class Q354_ConquestOfAlligatorIsland extends Quest
 				ALLIGATOR_TOOTH,
 				1,
 				0,
-				490000
+				840000
 			},
 			{
 				TORN_MAP_FRAGMENT,
@@ -52,7 +40,7 @@ public class Q354_ConquestOfAlligatorIsland extends Quest
 				ALLIGATOR_TOOTH,
 				1,
 				0,
-				560000
+				910000
 			},
 			{
 				TORN_MAP_FRAGMENT,
@@ -67,7 +55,7 @@ public class Q354_ConquestOfAlligatorIsland extends Quest
 				ALLIGATOR_TOOTH,
 				1,
 				0,
-				500000
+				880000
 			},
 			{
 				TORN_MAP_FRAGMENT,
@@ -82,7 +70,7 @@ public class Q354_ConquestOfAlligatorIsland extends Quest
 				ALLIGATOR_TOOTH,
 				1,
 				0,
-				600000
+				920000
 			},
 			{
 				TORN_MAP_FRAGMENT,
@@ -97,7 +85,7 @@ public class Q354_ConquestOfAlligatorIsland extends Quest
 				ALLIGATOR_TOOTH,
 				1,
 				0,
-				690000
+				1000000
 			},
 			{
 				TORN_MAP_FRAGMENT,
@@ -112,7 +100,7 @@ public class Q354_ConquestOfAlligatorIsland extends Quest
 				ALLIGATOR_TOOTH,
 				1,
 				0,
-				600000
+				1000000
 			},
 			{
 				TORN_MAP_FRAGMENT,

@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.skills.effects;
 
 import java.util.ArrayList;
@@ -23,6 +9,7 @@ import net.sf.l2j.gameserver.model.L2Object;
 import net.sf.l2j.gameserver.model.actor.L2Attackable;
 import net.sf.l2j.gameserver.model.actor.L2Character;
 import net.sf.l2j.gameserver.model.actor.instance.L2ChestInstance;
+import net.sf.l2j.gameserver.model.actor.instance.L2DoorInstance;
 import net.sf.l2j.gameserver.skills.Env;
 import net.sf.l2j.gameserver.templates.skills.L2EffectFlag;
 import net.sf.l2j.gameserver.templates.skills.L2EffectType;
@@ -32,7 +19,6 @@ import net.sf.l2j.util.Rnd;
  * This effect changes the target of the victim. It adds some random aggro aswell to force the monster to keep attacking. As the added aggro is random, the victim can often change of target.<br>
  * <br>
  * Only others mobs can fill the aggroList of the victim. For a more generic use, consider using EffectConfusion.
- * @author littlecrow, Tryskell
  */
 public class EffectConfuseMob extends L2Effect
 {
@@ -72,8 +58,10 @@ public class EffectConfuseMob extends L2Effect
 		for (L2Object obj : getEffected().getKnownList().getKnownObjects())
 		{
 			// Only attackable NPCs are put in the list.
-			if (obj instanceof L2Attackable && !(obj instanceof L2ChestInstance) && obj != getEffected())
-				targetList.add((L2Character) obj);
+			if ((obj instanceof L2Attackable) && (obj != getEffected()))
+				// Don't put doors nor chests on it.
+				if (!(obj instanceof L2DoorInstance || obj instanceof L2ChestInstance))
+					targetList.add((L2Character) obj);
 		}
 		
 		// if there is no target, exit function

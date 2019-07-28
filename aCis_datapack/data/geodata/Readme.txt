@@ -1,8 +1,7 @@
 ##############################################
 GEODATA COMPENDIUM
 ##############################################
-
-Comprehensive guide for geodata, by Tryskell and Hasha.
+Comprehensive guide for geodata.
 
 I	- Supported types of geodata, pros/cons
 II	- How to configure it
@@ -22,7 +21,7 @@ I - Supported types of geodata, pros/cons
 	All L2J files are based on L2OFF, the main advantage is a slight decrease in file weight (-15%).
 	Doesn't worth to be used, unless you have a good reason to use them (e.g. use an heavily handmade/customized files).
 * L2D:
-	A unique format made by Hasha, holding additional diagonal movement information in addition to regular NSWE flags.
+	A unique format, holding additional diagonal movement information in addition to regular NSWE flags.
 	Heavier file weight (+30%), but the pathfinding algorithms are processed way faster (-35% calculation times).
 	Use it, if you plan to not update your geodata files often, since it requires conversion (see below).
 

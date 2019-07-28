@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.network.clientpackets;
 
 import net.sf.l2j.gameserver.model.L2Party;
@@ -41,6 +27,12 @@ public final class RequestWithdrawParty extends L2GameClientPacket
 		if (party == null)
 			return;
 		
+		if (player.isSubmitingPin())
+		{
+			player.sendMessage("Unable to do any action while PIN is not submitted");
+			return;
+		}
+		
 		if (party.isInDimensionalRift() && !party.getDimensionalRift().getRevivedAtWaitingRoom().contains(player))
 			player.sendMessage("You can't exit party when you are in Dimensional Rift.");
 		else
@@ -52,8 +44,8 @@ public final class RequestWithdrawParty extends L2GameClientPacket
 				PartyMatchRoom _room = PartyMatchRoomList.getInstance().getPlayerRoom(player);
 				if (_room != null)
 				{
-					player.sendPacket(new PartyMatchDetail(_room));
-					player.sendPacket(new ExPartyRoomMember(_room, 0));
+					player.sendPacket(new PartyMatchDetail(player, _room));
+					player.sendPacket(new ExPartyRoomMember(player, _room, 0));
 					player.sendPacket(ExClosePartyRoom.STATIC_PACKET);
 					
 					_room.deleteMember(player);

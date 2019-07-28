@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.skills;
 
 import java.util.NoSuchElementException;
@@ -41,6 +27,7 @@ public enum Stats
 	POWER_ATTACK_SPEED("pAtkSpd"),
 	MAGIC_ATTACK_SPEED("mAtkSpd"),
 	MAGIC_REUSE_RATE("mReuse"),
+	ATK_REUSE("atkReuse"),
 	P_REUSE("pReuse"),
 	SHIELD_DEFENCE("sDef"),
 	SHIELD_DEFENCE_ANGLE("shieldDefAngle"),
@@ -176,6 +163,9 @@ public enum Stats
 	PHYSICAL_MP_CONSUME_RATE("PhysicalMpConsumeRate"),
 	MAGICAL_MP_CONSUME_RATE("MagicalMpConsumeRate"),
 	DANCE_MP_CONSUME_RATE("DanceMpConsumeRate"),
+	BOW_MP_CONSUME_RATE("BowMpConsumeRate"),
+	HP_CONSUME_RATE("HpConsumeRate"),
+	MP_CONSUME("MpConsume"),
 	
 	// Skill mastery
 	SKILL_MASTERY("skillMastery");

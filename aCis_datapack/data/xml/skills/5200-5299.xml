@@ -287,7 +287,7 @@
 		<set name="castRange" val="400" />
 		<set name="effectRange" val="900" />
 	</skill>
-	<skill id="5219" levels="1" name="Huge Pig Stun">
+	<!--<<skill id="5219" levels="1" name="Huge Pig Stun">
 		<set name="magicLvl" val="95" />
 		<set name="lvlDepend" val="1" />
 		<set name="power" val="50" />
@@ -305,8 +305,8 @@
 		<for>
 			<effect name="Stun" time="9" val="0" stackOrder="1" stackType="stun" />
 		</for>
-	</skill>
-	<skill id="5220" levels="1" name="Huge Pig Fear">
+	</skill>-->
+	<!--<skill id="5220" levels="1" name="Huge Pig Fear">
 		<set name="magicLvl" val="95" />
 		<set name="mpConsume" val="43" />
 		<set name="power" val="50" />
@@ -323,5 +323,5 @@
 		<for>
 			<effect count="5" name="Fear" time="6" val="0" stackOrder="1" stackType="turn_flee" />
 		</for>
-	</skill>
+	</skill>-->
 </list>

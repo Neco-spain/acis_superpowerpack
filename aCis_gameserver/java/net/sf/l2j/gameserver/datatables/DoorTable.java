@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.datatables;
 
 import java.io.File;
@@ -23,7 +9,6 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import net.sf.l2j.Config;
 import net.sf.l2j.gameserver.idfactory.IdFactory;
 import net.sf.l2j.gameserver.instancemanager.CastleManager;
 import net.sf.l2j.gameserver.instancemanager.ClanHallManager;
@@ -214,9 +199,6 @@ public class DoorTable
 										door.setIsWall(true);
 									
 									castle.getDoors().add(door); // Add the door to castle doors list.
-									
-									if (Config.DEBUG)
-										_log.warning("DoorTable: Door " + door.getDoorId() + " is now attached to " + castle.getName() + " castle.");
 								}
 							}
 							// Test door, and attach it to a CH if a CH is found near
@@ -228,8 +210,6 @@ public class DoorTable
 									clanhall.getDoors().add(door); // Add the door to CH doors list.
 									door.setClanHall(clanhall);
 									
-									if (Config.DEBUG)
-										_log.warning("DoorTable: Door " + door.getDoorId() + " is now attached to " + clanhall.getName() + " clanhall.");
 								}
 							}
 							

@@ -1,15 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package quests.Q325_GrimCollector;
 
 import java.util.Arrays;
@@ -72,12 +60,12 @@ public class Q325_GrimCollector extends Quest
 			addKillId(npcId);
 	}
 	
-	private static int getNumberOfPieces(QuestState st)
+	private int getNumberOfPieces(QuestState st)
 	{
 		return st.getQuestItemsCount(ZOMBIE_HEAD) + st.getQuestItemsCount(SPINE) + st.getQuestItemsCount(ARM_BONE) + st.getQuestItemsCount(ZOMBIE_HEART) + st.getQuestItemsCount(ZOMBIE_LIVER) + st.getQuestItemsCount(SKULL) + st.getQuestItemsCount(RIB_BONE) + st.getQuestItemsCount(THIGH_BONE) + st.getQuestItemsCount(COMPLETE_SKELETON);
 	}
 	
-	private static void payback(QuestState st)
+	private void payback(QuestState st)
 	{
 		final int count = getNumberOfPieces(st);
 		if (count > 0)

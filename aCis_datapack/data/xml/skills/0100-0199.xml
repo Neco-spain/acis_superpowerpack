@@ -949,11 +949,6 @@
 			<add order="0x40" stat="cAtkAdd" val="#crit"/>
 		</for>
 	</skill>
-	<skill id="194" levels="1" name="Lucky">
-		<set name="target" val="TARGET_SELF"/>
-		<set name="skillType" val="LUCK"/>
-		<set name="operateType" val="OP_PASSIVE"/>
-	</skill>
 	<skill id="195" levels="2" name="Boost Breath">
 		<table name="#breath"> 180 300 </table>
 		<table name="#magicLvl"> 20 55 </table>

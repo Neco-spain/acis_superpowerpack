@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.datatables;
 
 import java.util.ArrayList;
@@ -30,12 +16,7 @@ import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
  */
 public class GmListTable
 {
-	private final Map<L2PcInstance, Boolean> _gmList = new ConcurrentHashMap<>();
-	
-	protected GmListTable()
-	{
-		
-	}
+	private final Map<L2PcInstance, Boolean> _gmList;
 	
 	public static GmListTable getInstance()
 	{
@@ -71,6 +52,11 @@ public class GmListTable
 		return tmpGmList;
 	}
 	
+	protected GmListTable()
+	{
+		_gmList = new ConcurrentHashMap<>();
+	}
+	
 	/**
 	 * Add a L2PcInstance player to the Set _gmList
 	 * @param player
@@ -87,19 +73,23 @@ public class GmListTable
 	}
 	
 	/**
-	 * Refresh GM for GMlist.
-	 * @param player : The GM to affect.
-	 * @param showOrHide : The option to set.
+	 * GM will be displayed on clients gmlist
+	 * @param player
 	 */
-	public void showOrHideGm(L2PcInstance player, boolean showOrHide)
+	public void showGm(L2PcInstance player)
 	{
 		if (_gmList.containsKey(player))
-			_gmList.put(player, showOrHide);
+			_gmList.put(player, false);
 	}
 	
-	public boolean isGmVisible(L2PcInstance player)
+	/**
+	 * GM will no longer be displayed on clients gmlist
+	 * @param player
+	 */
+	public void hideGm(L2PcInstance player)
 	{
-		return _gmList.get(player);
+		if (_gmList.containsKey(player))
+			_gmList.put(player, true);
 	}
 	
 	public boolean isGmOnline(boolean includeHidden)

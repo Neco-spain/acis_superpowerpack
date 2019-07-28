@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver;
 
 import java.io.BufferedOutputStream;
@@ -31,7 +17,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import net.sf.l2j.Config;
@@ -56,7 +41,6 @@ import net.sf.l2j.gameserver.network.serverpackets.AuthLoginFail;
 import net.sf.l2j.gameserver.network.serverpackets.CharSelectInfo;
 import net.sf.l2j.loginserver.crypt.NewCrypt;
 import net.sf.l2j.util.Rnd;
-import net.sf.l2j.util.Util;
 
 public class LoginServerThread extends Thread
 {
@@ -186,17 +170,11 @@ public class LoginServerThread extends Thread
 						break;
 					}
 					
-					if (Config.DEBUG)
-						_log.warning("[C]\n" + Util.printData(decrypt));
-					
 					int packetType = decrypt[0] & 0xff;
 					switch (packetType)
 					{
 						case 0x00:
 							InitLS init = new InitLS(decrypt);
-							if (Config.DEBUG)
-								_log.info("Init received");
-							
 							if (init.getRevision() != REVISION)
 							{
 								_log.warning("/!\\ Revision mismatch between LS and GS /!\\");
@@ -209,8 +187,6 @@ public class LoginServerThread extends Thread
 								BigInteger modulus = new BigInteger(init.getRSAKey());
 								RSAPublicKeySpec kspec1 = new RSAPublicKeySpec(modulus, RSAKeyGenParameterSpec.F4);
 								_publicKey = (RSAPublicKey) kfac.generatePublic(kspec1);
-								if (Config.DEBUG)
-									_log.info("RSA key set up");
 							}
 							catch (GeneralSecurityException e)
 							{
@@ -222,18 +198,11 @@ public class LoginServerThread extends Thread
 							BlowFishKey bfk = new BlowFishKey(_blowfishKey, _publicKey);
 							sendPacket(bfk);
 							
-							if (Config.DEBUG)
-								_log.info("Sent new blowfish key");
-							
 							// now, only accept paket with the new encryption
 							_blowfish = new NewCrypt(_blowfishKey);
-							if (Config.DEBUG)
-								_log.info("Changed blowfish key");
 							
 							AuthRequest ar = new AuthRequest(_requestID, _acceptAlternate, _hexID, _gameExternalHost, _gameInternalHost, _gamePort, _reserveHost, _maxPlayer);
 							sendPacket(ar);
-							if (Config.DEBUG)
-								_log.info("Sent AuthRequest to login");
 							break;
 						case 0x01:
 							LoginServerFail lsf = new LoginServerFail(decrypt);
@@ -297,6 +266,7 @@ public class LoginServerThread extends Thread
 							{
 								if (par.isAuthed())
 								{
+									_log.info("Login accepted player " + wcToRemove.account + " waited(" + (GameTimeController.getInstance().getGameTicks() - wcToRemove.timestamp) + "ms)");
 									PlayerInGame pig = new PlayerInGame(par.getAccount());
 									sendPacket(pig);
 									wcToRemove.gameClient.setState(GameClientState.AUTHED);
@@ -307,7 +277,7 @@ public class LoginServerThread extends Thread
 								}
 								else
 								{
-									_log.warning("Session key is not correct. closing connection");
+									//_log.warning("Session key is not correct. closing connection");
 									wcToRemove.gameClient.getConnection().sendPacket(new AuthLoginFail(1));
 									wcToRemove.gameClient.closeNow();
 								}
@@ -323,8 +293,7 @@ public class LoginServerThread extends Thread
 			}
 			catch (UnknownHostException e)
 			{
-				if (Config.DEBUG)
-					_log.log(Level.WARNING, "", e);
+				
 			}
 			catch (IOException e)
 			{
@@ -356,9 +325,6 @@ public class LoginServerThread extends Thread
 	
 	public void addWaitingClientAndSendRequest(String acc, L2GameClient client, SessionKey key)
 	{
-		if (Config.DEBUG)
-			_log.info(String.valueOf(key));
-		
 		WaitingClient wc = new WaitingClient(acc, client, key);
 		synchronized (_waitingClients)
 		{
@@ -373,8 +339,6 @@ public class LoginServerThread extends Thread
 		catch (IOException e)
 		{
 			_log.warning("Error while sending player auth request");
-			if (Config.DEBUG)
-				_log.log(Level.WARNING, "", e);
 		}
 	}
 	
@@ -407,8 +371,6 @@ public class LoginServerThread extends Thread
 		catch (IOException e)
 		{
 			_log.warning("Error while sending logout packet to login");
-			if (Config.DEBUG)
-				_log.log(Level.WARNING, "", e);
 		}
 		finally
 		{
@@ -433,8 +395,7 @@ public class LoginServerThread extends Thread
 		}
 		catch (IOException e)
 		{
-			if (Config.DEBUG)
-				_log.log(Level.WARNING, "", e);
+			
 		}
 	}
 	
@@ -457,9 +418,6 @@ public class LoginServerThread extends Thread
 		byte[] array = new byte[size];
 		Rnd.nextBytes(array);
 		
-		if (Config.DEBUG)
-			_log.fine("Generated random String:  \"" + array + "\"");
-		
 		return array;
 	}
 	
@@ -467,9 +425,6 @@ public class LoginServerThread extends Thread
 	{
 		byte[] data = sl.getContent();
 		NewCrypt.appendChecksum(data);
-		if (Config.DEBUG)
-			_log.finest("[S]\n" + Util.printData(data));
-		
 		data = _blowfish.crypt(data);
 		
 		int len = data.length + 2;
@@ -503,8 +458,7 @@ public class LoginServerThread extends Thread
 		}
 		catch (IOException e)
 		{
-			if (Config.DEBUG)
-				e.printStackTrace();
+			
 		}
 	}
 	
@@ -590,6 +544,7 @@ public class LoginServerThread extends Thread
 	
 	private class WaitingClient
 	{
+		public int timestamp;
 		public String account;
 		public L2GameClient gameClient;
 		public SessionKey session;
@@ -597,6 +552,7 @@ public class LoginServerThread extends Thread
 		public WaitingClient(String acc, L2GameClient client, SessionKey key)
 		{
 			account = acc;
+			timestamp = GameTimeController.getInstance().getGameTicks();
 			gameClient = client;
 			session = key;
 		}

@@ -1,18 +1,5 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package quests.Q620_FourGoblets;
 
-import net.sf.l2j.commons.lang.StringUtil;
 import net.sf.l2j.gameserver.instancemanager.FourSepulchersManager;
 import net.sf.l2j.gameserver.model.actor.L2Npc;
 import net.sf.l2j.gameserver.model.actor.instance.L2PcInstance;
@@ -185,7 +172,7 @@ public class Q620_FourGoblets extends Quest
 			}
 		}
 		// If event is a simple digit, parse it to get an integer form, then test the reward list
-		else if (StringUtil.isDigit(event))
+		else if (Util.isDigit(event))
 		{
 			final int id = Integer.parseInt(event);
 			if (Util.contains(RCP_REWARDS, id) && st.getQuestItemsCount(RELIC) >= 1000)
@@ -276,7 +263,7 @@ public class Q620_FourGoblets extends Quest
 	 * @param st the QuestState of the player, used to reward him.
 	 * @return true if there was a reward, false if not (used to call a "no-reward" html)
 	 */
-	private static boolean calculateBoxReward(QuestState st)
+	private boolean calculateBoxReward(QuestState st)
 	{
 		boolean reward = false;
 		int rnd = Rnd.get(5);

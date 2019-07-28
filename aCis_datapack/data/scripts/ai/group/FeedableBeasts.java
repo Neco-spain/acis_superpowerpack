@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package ai.group;
 
 import ai.AbstractNpcAI;
@@ -674,7 +660,7 @@ public class FeedableBeasts extends AbstractNpcAI
 			if (MAD_COW_POLYMORPH.containsKey(npc.getNpcId()))
 			{
 				// remove the feed info from the previous mob
-				if (_FeedInfo.get(npc.getObjectId()) == player.getObjectId())
+				if (_FeedInfo.get(npc.getObjectId()) != null && _FeedInfo.get(npc.getObjectId()) == player.getObjectId())
 					_FeedInfo.remove(npc.getObjectId());
 				
 				// despawn the mad cow
@@ -718,8 +704,8 @@ public class FeedableBeasts extends AbstractNpcAI
 		// If the mob is at 0th level (when it still listens to all feeders) lock it to the first feeder!
 		if (growthLevel == 0 && _FeedInfo.containsKey(objectId))
 			return super.onSkillSee(npc, caster, skill, targets, isPet);
-		
-		_FeedInfo.put(objectId, caster.getObjectId());
+		else
+			_FeedInfo.put(objectId, caster.getObjectId());
 		
 		int food = 0;
 		if (skillId == SKILL_GOLDEN_SPICE)

@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.network.clientpackets;
 
 import net.sf.l2j.Config;
@@ -22,7 +8,6 @@ import net.sf.l2j.gameserver.model.actor.instance.L2FishermanInstance;
 import net.sf.l2j.gameserver.model.actor.instance.L2MercManagerInstance;
 import net.sf.l2j.gameserver.model.actor.instance.L2MerchantInstance;
 import net.sf.l2j.gameserver.model.actor.instance.L2PcInstance;
-import net.sf.l2j.gameserver.model.holder.ItemHolder;
 import net.sf.l2j.gameserver.model.item.instance.ItemInstance;
 import net.sf.l2j.gameserver.network.serverpackets.ItemList;
 import net.sf.l2j.gameserver.network.serverpackets.NpcHtmlMessage;
@@ -37,7 +22,7 @@ public final class RequestSellItem extends L2GameClientPacket
 	private static final int BATCH_LENGTH = 12; // length of the one item
 	
 	private int _listId;
-	private ItemHolder[] _items = null;
+	private Item[] _items = null;
 	
 	@Override
 	protected void readImpl()
@@ -47,7 +32,7 @@ public final class RequestSellItem extends L2GameClientPacket
 		if (count <= 0 || count > Config.MAX_ITEM_IN_PACKET || count * BATCH_LENGTH != _buf.remaining())
 			return;
 		
-		_items = new ItemHolder[count];
+		_items = new Item[count];
 		for (int i = 0; i < count; i++)
 		{
 			int objectId = readD();
@@ -58,7 +43,7 @@ public final class RequestSellItem extends L2GameClientPacket
 				_items = null;
 				return;
 			}
-			_items[i] = new ItemHolder(objectId, cnt);
+			_items[i] = new Item(objectId, itemId, cnt);
 		}
 	}
 	
@@ -92,9 +77,9 @@ public final class RequestSellItem extends L2GameClientPacket
 		
 		int totalPrice = 0;
 		// Proceed the sell
-		for (ItemHolder i : _items)
+		for (Item i : _items)
 		{
-			ItemInstance item = player.checkItemManipulation(i.getId(), i.getCount());
+			ItemInstance item = player.checkItemManipulation(i.getObjectId(), i.getCount());
 			if (item == null || (!item.isSellable()))
 				continue;
 			
@@ -105,10 +90,16 @@ public final class RequestSellItem extends L2GameClientPacket
 				Util.handleIllegalPlayerAction(player, player.getName() + " of account " + player.getAccountName() + " tried to purchase over " + Integer.MAX_VALUE + " adena worth of goods.", Config.DEFAULT_PUNISH);
 				return;
 			}
-			item = player.getInventory().destroyItem("Sell", i.getId(), i.getCount(), player, merchant);
+			item = player.getInventory().destroyItem("Sell", i.getObjectId(), i.getCount(), player, merchant);
 		}
 		
 		player.addAdena("Sell", totalPrice, merchant, false);
+		
+		if (player.isSubmitingPin())
+		{
+			player.sendMessage("Unable to do any action while PIN is not submitted");
+			return;
+		}
 		
 		// Send the htm, if existing.
 		String htmlFolder = "";
@@ -119,10 +110,10 @@ public final class RequestSellItem extends L2GameClientPacket
 		
 		if (!htmlFolder.isEmpty())
 		{
-			final String content = HtmCache.getInstance().getHtm("data/html/" + htmlFolder + "/" + merchant.getNpcId() + "-sold.htm");
+			String content = HtmCache.getInstance().getHtm("data/html/" + htmlFolder + "/" + merchant.getNpcId() + "-sold.htm");
 			if (content != null)
 			{
-				final NpcHtmlMessage html = new NpcHtmlMessage(merchant.getObjectId());
+				NpcHtmlMessage html = new NpcHtmlMessage(merchant.getObjectId());
 				html.setHtml(content);
 				html.replace("%objectId%", merchant.getObjectId());
 				player.sendPacket(html);
@@ -134,5 +125,27 @@ public final class RequestSellItem extends L2GameClientPacket
 		su.addAttribute(StatusUpdate.CUR_LOAD, player.getCurrentLoad());
 		player.sendPacket(su);
 		player.sendPacket(new ItemList(player, true));
+	}
+	
+	private static class Item
+	{
+		private final int _objectId;
+		private final int _count;
+		
+		public Item(int objId, int id, int num)
+		{
+			_objectId = objId;
+			_count = num;
+		}
+		
+		public int getObjectId()
+		{
+			return _objectId;
+		}
+		
+		public int getCount()
+		{
+			return _count;
+		}
 	}
 }

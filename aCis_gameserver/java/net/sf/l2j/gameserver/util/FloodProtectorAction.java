@@ -1,21 +1,10 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under the terms of the
- * GNU General Public License as published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
- * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * General Public License for more details.
- * 
- * You should have received a copy of the GNU General Public License along with this program. If
- * not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.util;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import net.sf.l2j.gameserver.GameTimeController;
 import net.sf.l2j.gameserver.model.actor.instance.L2PcInstance;
 import net.sf.l2j.gameserver.network.L2GameClient;
 import net.sf.l2j.util.StringUtil;
@@ -31,7 +20,7 @@ public final class FloodProtectorAction
 	private final L2GameClient _client;
 	private final FloodProtectorConfig _config;
 	
-	private volatile long _lastTime = System.currentTimeMillis();
+	private volatile int _nextGameTick = GameTimeController.getInstance().getGameTicks();
 	private final AtomicInteger _count = new AtomicInteger(0);
 	
 	private boolean _logged;
@@ -57,13 +46,13 @@ public final class FloodProtectorAction
 	 */
 	public boolean tryPerformAction(final String command)
 	{
-		final long time = System.currentTimeMillis();
+		final int curTick = GameTimeController.getInstance().getGameTicks();
 		
-		if (time < _lastTime || _punishmentInProgress)
+		if (curTick < _nextGameTick || _punishmentInProgress)
 		{
 			if (_config.LOG_FLOODING && !_logged && _log.isLoggable(Level.WARNING))
 			{
-				log(" called command ", command, " ~", String.valueOf((_config.FLOOD_PROTECTION_INTERVAL - (_lastTime - time))), " ms after previous command");
+				log(" called command ", command, " ~", String.valueOf((_config.FLOOD_PROTECTION_INTERVAL - (_nextGameTick - curTick)) * GameTimeController.MILLIS_IN_TICK), " ms after previous command");
 				_logged = true;
 			}
 			
@@ -89,10 +78,10 @@ public final class FloodProtectorAction
 		if (_count.get() > 0)
 		{
 			if (_config.LOG_FLOODING && _log.isLoggable(Level.WARNING))
-				log(" issued ", String.valueOf(_count), " extra requests within ~", String.valueOf(_config.FLOOD_PROTECTION_INTERVAL), " ms");
+				log(" issued ", String.valueOf(_count), " extra requests within ~", String.valueOf(_config.FLOOD_PROTECTION_INTERVAL * GameTimeController.MILLIS_IN_TICK), " ms");
 		}
 		
-		_lastTime = time + _config.FLOOD_PROTECTION_INTERVAL;
+		_nextGameTick = curTick + _config.FLOOD_PROTECTION_INTERVAL;
 		_logged = false;
 		_count.set(0);
 		

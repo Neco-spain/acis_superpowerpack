@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.model.actor.stat;
 
 import net.sf.l2j.Config;
@@ -49,6 +35,9 @@ public class PcStat extends PlayableStat
 		if (!getActiveChar().getAccessLevel().canGainExp())
 			return false;
 		
+		if (getActiveChar().getExpSpRefusal() == true)
+			return false;
+		
 		if (!super.addExp(value))
 			return false;
 		
@@ -66,14 +55,32 @@ public class PcStat extends PlayableStat
 	 * <li>If the L2PcInstance increases its level, manage the increase level task (Max MP, Max MP, Recommandation, Expertise and beginner skills...)</li>
 	 * <li>If the L2PcInstance increases its level, send UserInfo to the L2PcInstance</li>
 	 * </ul>
-	 * @param addToExp The Experience value to add
-	 * @param addToSp The SP value to add
 	 */
 	@Override
 	public boolean addExpAndSp(long addToExp, int addToSp)
 	{
+		return addExpAndSp(addToExp, addToSp, false);
+	}
+	
+	public boolean addExpAndSp(long addToExp, int addToSp, boolean useBonuses)
+	{
 		// GM check concerning canGainExp().
 		if (!getActiveChar().getAccessLevel().canGainExp())
+			return false;
+		
+		double bonusExp = Config.EXPERIENCE_BLESSING_BONUS;
+		double bonusSp = Config.EXPERIENCE_BLESSING_BONUS;
+		
+		if (useBonuses)
+		{
+			bonusExp = getExpBonusMultiplier();
+			bonusSp = getSpBonusMultiplier();
+		}
+		
+		addToExp *= bonusExp;
+		addToSp *= bonusSp;
+		
+		if (getActiveChar().getExpSpRefusal() == true)
 			return false;
 		
 		// If this player has a pet, give the xp to the pet now (if any).
@@ -391,5 +398,37 @@ public class PcStat extends PlayableStat
 	public int getWalkSpeed()
 	{
 		return (getRunSpeed() * 70) / 100;
+	}
+	
+	public double getExpBonusMultiplier()
+	{
+		double bonus = 1.0;
+		double bonusExp = 1.0;
+		
+		if (bonusExp > 1)
+		{
+			bonus += (bonusExp - 1);
+		}
+		
+		bonus = Math.max(bonus, 1);
+		bonus = Math.min(bonus, 3.5);
+		
+		return bonus;
+	}
+	
+	public double getSpBonusMultiplier()
+	{
+		double bonus = 1.0;
+		double bonusSp = 1.0;
+		
+		if (bonusSp > 1)
+		{
+			bonus += (bonusSp - 1);
+		}
+		
+		bonus = Math.max(bonus, 1);
+		bonus = Math.min(bonus, 3.5);
+		
+		return bonus;
 	}
 }

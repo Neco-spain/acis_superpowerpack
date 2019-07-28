@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.network.clientpackets;
 
 import static net.sf.l2j.gameserver.model.actor.L2Npc.INTERACTION_DISTANCE;
@@ -29,10 +15,12 @@ import net.sf.l2j.gameserver.model.item.kind.Item;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.serverpackets.ActionFailed;
 import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
-import net.sf.l2j.gameserver.util.FloodProtectors;
-import net.sf.l2j.gameserver.util.FloodProtectors.Action;
 import net.sf.l2j.gameserver.util.Util;
 
+/**
+ * Format: cdd[dd]
+ * @author l3x
+ */
 public class RequestBuySeed extends L2GameClientPacket
 {
 	private static final int BATCH_LENGTH = 8; // length of the one item
@@ -66,11 +54,11 @@ public class RequestBuySeed extends L2GameClientPacket
 	@Override
 	protected void runImpl()
 	{
-		if (!FloodProtectors.performAction(getClient(), Action.MANOR))
+		L2PcInstance player = getClient().getActiveChar();
+		if (player == null)
 			return;
 		
-		final L2PcInstance player = getClient().getActiveChar();
-		if (player == null)
+		if (!getClient().getFloodProtectors().getManor().tryPerformAction("buySeed"))
 			return;
 		
 		if (_seeds == null)

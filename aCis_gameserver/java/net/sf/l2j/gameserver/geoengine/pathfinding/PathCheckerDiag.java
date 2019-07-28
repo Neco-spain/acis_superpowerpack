@@ -143,6 +143,7 @@ public class PathCheckerDiag extends PathFinding
 	
 	/**
 	 * Simple check for origin to target visibility.
+	 * 
 	 * @param gox : origin X coord
 	 * @param goy : origin Y coord
 	 * @param goz : origin Z coord
@@ -155,7 +156,7 @@ public class PathCheckerDiag extends PathFinding
 	 */
 	private final static boolean checkSee(int gox, int goy, int goz, int oheight, int gtx, int gty, int gtz, int theight)
 	{
-		// PathFinding.clearDebugItems();
+//		PathFinding.clearDebugItems();
 		
 		// get line of sight Z coords
 		double noz = goz + (double) oheight * Config.PART_OF_CHARACTER_HEIGHT / 100;
@@ -176,8 +177,8 @@ public class PathCheckerDiag extends PathFinding
 		// delta, determines axis to move on (+..X axis, -..Y axis)
 		int d = dx - dy;
 		
-		// PathFinding.dropDebugItem(57, 0, new GeoLocation(gox, goy, goz));
-		// PathFinding.dropDebugItem(1831, 0, new GeoLocation(gtx, gty, gtz));
+//		PathFinding.dropDebugItem(57, 0, new GeoLocation(gox, goy, goz));
+//		PathFinding.dropDebugItem(1831, 0, new GeoLocation(gtx, gty, gtz));
 		
 		// loop
 		for (int i = 0; i < (dm + 1) / 2; i++)
@@ -203,8 +204,8 @@ public class PathCheckerDiag extends PathFinding
 			goz = GeoData.getInstance().getHeightNearest(gox, goy, goz);
 			gtz = GeoData.getInstance().getHeightNearest(gtx, gty, gtz);
 			
-			// PathFinding.dropDebugItem(57, 0, new GeoLocation(gox, goy, goz));
-			// PathFinding.dropDebugItem(1831, 0, new GeoLocation(gtx, gty, gtz));
+//			PathFinding.dropDebugItem(57, 0, new GeoLocation(gox, goy, goz));
+//			PathFinding.dropDebugItem(1831, 0, new GeoLocation(gtx, gty, gtz));
 			
 			// calculate next line of sight Z coord
 			noz += dz;
@@ -213,7 +214,7 @@ public class PathCheckerDiag extends PathFinding
 			// perform line of sight check
 			if ((goz - noz) > Config.MAX_OBSTACLE_HEIGHT || (gtz - ntz) > Config.MAX_OBSTACLE_HEIGHT)
 			{
-				// GmListTable.broadcastMessageToGMs("can not see");
+//				GmListTable.broadcastMessageToGMs("can not see");
 				return false;
 			}
 		}
@@ -224,17 +225,12 @@ public class PathCheckerDiag extends PathFinding
 	/**
 	 * With this method you can check if a position is visible or can be reached by beeline movement.<br>
 	 * Target X and Y reachable and Z is on same floor:
-	 * <ul>
-	 * <li>Location of the target with corrected Z value from geodata.</li>
-	 * </ul>
+	 * <ul><li>Location of the target with corrected Z value from geodata.</li></ul>
 	 * Target X and Y reachable but Z is on another floor:
-	 * <ul>
-	 * <li>Location of the origin with corrected Z value from geodata.</li>
-	 * </ul>
+	 * <ul><li>Location of the origin with corrected Z value from geodata.</li></ul>
 	 * Target X and Y not reachable:
-	 * <ul>
-	 * <li>Last accessible location in destination to target.</li>
-	 * </ul>
+	 * <ul><li>Last accessible location in destination to target.</li></ul>
+	 * 
 	 * @param gox : origin X geodata coord
 	 * @param goy : origin Y geodata coord
 	 * @param goz : origin Z geodata coord
@@ -245,7 +241,7 @@ public class PathCheckerDiag extends PathFinding
 	 */
 	protected final static GeoLocation checkMove(int gox, int goy, int goz, int gtx, int gty, int gtz)
 	{
-		// PathFinding.clearDebugItems();
+//		PathFinding.clearDebugItems();
 		
 		// get X delta, signum and direction flag
 		final int dx = Math.abs(gtx - gox);
@@ -264,7 +260,7 @@ public class PathCheckerDiag extends PathFinding
 		int d = dx - dy;
 		
 		// NSWE direction of movement
-		byte direction;
+		byte direction; 
 		
 		// load pointer coords
 		int gpx = gox;
@@ -275,7 +271,7 @@ public class PathCheckerDiag extends PathFinding
 		int nx = gpx;
 		int ny = gpy;
 		
-		// PathFinding.dropDebugItem(57, 0, new GeoLocation(gpx, gpy, (short) gpz));
+//		PathFinding.dropDebugItem(57, 0, new GeoLocation(gpx, gpy, (short) gpz));
 		
 		// loop
 		do
@@ -314,7 +310,7 @@ public class PathCheckerDiag extends PathFinding
 			gpy = ny;
 			gpz = GeoData.getInstance().getHeightNearest(nx, ny, gpz);
 			
-			// PathFinding.dropDebugItem(57, 0, new GeoLocation(gpx, gpy, (short) gpz));
+//			PathFinding.dropDebugItem(57, 0, new GeoLocation(gpx, gpy, (short) gpz));
 			
 			// target coords reached
 			if (gpx == gtx && gpy == gty)
@@ -327,13 +323,14 @@ public class PathCheckerDiag extends PathFinding
 				
 				// path found, Z coords are not okay, return origin point
 				return new GeoLocation(gox, goy, goz);
-			}
+			}			
 		}
 		while (true);
 	}
 	
 	/**
 	 * Returns diagonal NSWE flag format of combined two NSWE flags.
+	 * 
 	 * @param dirX : X direction NSWE flag
 	 * @param dirY : Y direction NSWE flag
 	 * @return byte : NSWE flag of combined direction

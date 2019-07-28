@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.model.olympiad;
 
 import java.sql.Connection;
@@ -22,6 +8,7 @@ import java.util.logging.Level;
 
 import net.sf.l2j.Config;
 import net.sf.l2j.L2DatabaseFactory;
+import net.sf.l2j.gameserver.model.L2Skill;
 import net.sf.l2j.gameserver.model.L2World;
 import net.sf.l2j.gameserver.model.Location;
 import net.sf.l2j.gameserver.model.actor.L2Character;
@@ -178,7 +165,29 @@ abstract public class OlympiadGameNormal extends AbstractOlympiadGame
 			return false;
 		
 		_playerOne.player.setIsOlympiadStart(true);
+		if (Config.OLY_SKILL_PROTECT)
+		{
+			for (L2Skill skill : _playerOne.player.getAllSkills())
+			{
+				if (Config.OLY_SKILL_LIST.contains(skill.getId()))
+				{
+					_playerOne.player.enableSkill(skill);
+				}
+				_playerOne.player.updateEffectIcons();
+			}
+		}
 		_playerTwo.player.setIsOlympiadStart(true);
+		if (Config.OLY_SKILL_PROTECT)
+		{
+			for (L2Skill skill : _playerTwo.player.getAllSkills())
+			{
+				if (Config.OLY_SKILL_LIST.contains(skill.getId()))
+				{
+					_playerTwo.player.enableSkill(skill);
+				}
+				_playerTwo.player.updateEffectIcons();
+			}
+		}
 		return true;
 	}
 	

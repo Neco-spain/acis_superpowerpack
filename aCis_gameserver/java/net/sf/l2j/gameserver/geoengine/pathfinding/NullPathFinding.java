@@ -25,7 +25,7 @@ import net.sf.l2j.gameserver.model.Location;
  * @author Hasha
  */
 public class NullPathFinding extends PathFinding
-{
+{	
 	public NullPathFinding()
 	{
 		_log.log(Level.INFO, "NullPathFinding: Ready.");

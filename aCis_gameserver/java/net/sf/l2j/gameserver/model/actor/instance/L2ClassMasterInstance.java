@@ -1,23 +1,8 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.model.actor.instance;
 
 import java.util.List;
 
 import net.sf.l2j.Config;
-import net.sf.l2j.commons.lang.StringUtil;
 import net.sf.l2j.gameserver.datatables.CharTemplateTable;
 import net.sf.l2j.gameserver.datatables.ItemTable;
 import net.sf.l2j.gameserver.model.actor.template.NpcTemplate;
@@ -25,9 +10,9 @@ import net.sf.l2j.gameserver.model.base.ClassId;
 import net.sf.l2j.gameserver.model.holder.ItemHolder;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.serverpackets.ActionFailed;
-import net.sf.l2j.gameserver.network.serverpackets.HennaInfo;
 import net.sf.l2j.gameserver.network.serverpackets.NpcHtmlMessage;
 import net.sf.l2j.gameserver.network.serverpackets.UserInfo;
+import net.sf.l2j.util.StringUtil;
 
 /**
  * Custom class allowing you to choose your class.<br>
@@ -58,7 +43,8 @@ public final class L2ClassMasterInstance extends L2NpcInstance
 		if (Config.ALLOW_CLASS_MASTERS)
 			filename = "data/html/classmaster/" + getNpcId() + ".htm";
 		
-		final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
+		// Send a Server->Client NpcHtmlMessage containing the text of the L2Npc to the L2PcInstance
+		NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
 		html.setFile(filename);
 		html.replace("%objectId%", getObjectId());
 		player.sendPacket(html);
@@ -67,6 +53,12 @@ public final class L2ClassMasterInstance extends L2NpcInstance
 	@Override
 	public void onBypassFeedback(L2PcInstance player, String command)
 	{
+		if (player.isAio())
+		{
+			player.sendMessage("You're not allowed to change your class.");
+			return;
+		}
+		
 		if (!Config.ALLOW_CLASS_MASTERS)
 			return;
 		
@@ -82,7 +74,7 @@ public final class L2ClassMasterInstance extends L2NpcInstance
 			
 			if (checkAndChangeClass(player, val))
 			{
-				final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
+				NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
 				html.setFile("data/html/classmaster/ok.htm");
 				html.replace("%name%", CharTemplateTable.getInstance().getClassNameById(val));
 				player.sendPacket(html);
@@ -90,7 +82,7 @@ public final class L2ClassMasterInstance extends L2NpcInstance
 		}
 		else if (command.startsWith("become_noble"))
 		{
-			final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
+			NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
 			
 			if (!player.isNoble())
 			{
@@ -116,14 +108,14 @@ public final class L2ClassMasterInstance extends L2NpcInstance
 	
 	private static final void showHtmlMenu(L2PcInstance player, int objectId, int level)
 	{
-		final NpcHtmlMessage html = new NpcHtmlMessage(objectId);
+		NpcHtmlMessage html = new NpcHtmlMessage(objectId);
 		
 		if (!Config.CLASS_MASTER_SETTINGS.isAllowed(level))
 		{
+			int jobLevel = player.getClassId().level();
 			final StringBuilder sb = new StringBuilder(100);
 			sb.append("<html><body>");
-			
-			switch (player.getClassId().level())
+			switch (jobLevel)
 			{
 				case 0:
 					if (Config.CLASS_MASTER_SETTINGS.isAllowed(1))
@@ -135,7 +127,6 @@ public final class L2ClassMasterInstance extends L2NpcInstance
 					else
 						sb.append("I can't change your occupation.<br>");
 					break;
-				
 				case 1:
 					if (Config.CLASS_MASTER_SETTINGS.isAllowed(2))
 						sb.append("Come back here when you reached level 40 to change your class.<br>");
@@ -144,14 +135,12 @@ public final class L2ClassMasterInstance extends L2NpcInstance
 					else
 						sb.append("I can't change your occupation.<br>");
 					break;
-				
 				case 2:
 					if (Config.CLASS_MASTER_SETTINGS.isAllowed(3))
 						sb.append("Come back here when you reached level 76 to change your class.<br>");
 					else
 						sb.append("I can't change your occupation.<br>");
 					break;
-				
 				case 3:
 					sb.append("There is no class change available for you anymore.<br>");
 					break;
@@ -173,7 +162,7 @@ public final class L2ClassMasterInstance extends L2NpcInstance
 					for (ClassId cid : ClassId.values())
 					{
 						if (validateClassId(currentClassId, cid) && cid.level() == level)
-							StringUtil.append(menu, "<a action=\"bypass -h npc_%objectId%_change_class ", cid.getId(), "\">", CharTemplateTable.getInstance().getClassNameById(cid.getId()), "</a><br>");
+							StringUtil.append(menu, "<a action=\"bypass -h npc_%objectId%_change_class ", String.valueOf(cid.getId()), "\">", CharTemplateTable.getInstance().getClassNameById(cid.getId()), "</a><br>");
 					}
 					
 					if (menu.length() > 0)
@@ -257,7 +246,6 @@ public final class L2ClassMasterInstance extends L2NpcInstance
 		else
 			player.setBaseClass(player.getActiveClass());
 		
-		player.sendPacket(new HennaInfo(player));
 		player.broadcastUserInfo();
 		return true;
 	}
@@ -326,9 +314,9 @@ public final class L2ClassMasterInstance extends L2NpcInstance
 		if (neededItems == null || neededItems.isEmpty())
 			return "<tr><td>none</td></r>";
 		
-		final StringBuilder sb = new StringBuilder();
+		StringBuilder sb = new StringBuilder();
 		for (ItemHolder item : neededItems)
-			StringUtil.append(sb, "<tr><td><font color=\"LEVEL\">", item.getCount(), "</font></td><td>", ItemTable.getInstance().getTemplate(item.getId()).getName(), "</td></tr>");
+			sb.append("<tr><td><font color=\"LEVEL\">" + item.getCount() + "</font></td><td>" + ItemTable.getInstance().getTemplate(item.getId()).getName() + "</td></tr>");
 		
 		return sb.toString();
 	}

@@ -1,18 +1,6 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.model.entity;
+
+import Extensions.Events.SiegeReward;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -27,7 +15,6 @@ import java.util.logging.Logger;
 
 import net.sf.l2j.Config;
 import net.sf.l2j.L2DatabaseFactory;
-import net.sf.l2j.commons.lang.StringUtil;
 import net.sf.l2j.gameserver.ThreadPoolManager;
 import net.sf.l2j.gameserver.datatables.ClanTable;
 import net.sf.l2j.gameserver.datatables.MapRegionTable.TeleportWhereType;
@@ -40,9 +27,9 @@ import net.sf.l2j.gameserver.model.L2Clan;
 import net.sf.l2j.gameserver.model.L2ClanMember;
 import net.sf.l2j.gameserver.model.L2Object;
 import net.sf.l2j.gameserver.model.L2SiegeClan;
+import net.sf.l2j.gameserver.model.Location;
 import net.sf.l2j.gameserver.model.L2SiegeClan.SiegeClanType;
 import net.sf.l2j.gameserver.model.L2Spawn;
-import net.sf.l2j.gameserver.model.Location;
 import net.sf.l2j.gameserver.model.TowerSpawn;
 import net.sf.l2j.gameserver.model.actor.L2Npc;
 import net.sf.l2j.gameserver.model.actor.instance.L2ControlTowerInstance;
@@ -54,6 +41,7 @@ import net.sf.l2j.gameserver.network.serverpackets.SiegeInfo;
 import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
 import net.sf.l2j.gameserver.network.serverpackets.UserInfo;
 import net.sf.l2j.gameserver.util.Broadcast;
+import net.sf.l2j.util.Util;
 
 public class Siege implements Siegable
 {
@@ -313,6 +301,10 @@ public class Siege implements Siegable
 			getCastle().getZone().setIsActive(true);
 			getCastle().getZone().updateZoneStatusForCharactersInside();
 			
+			// Siege Reward Manager
+			if (getCastle().getOwnerId() > 0)
+				SiegeReward.getInstance().notifySiegeEnded(ClanTable.getInstance().getClan(getCastle().getOwnerId()), getCastle().getName());
+			
 			// Schedule a task to prepare auto siege end
 			_siegeEndDate = Calendar.getInstance();
 			_siegeEndDate.add(Calendar.MINUTE, SiegeManager.SIEGE_LENGTH);
@@ -493,7 +485,6 @@ public class Siege implements Siegable
 				statement = con.prepareStatement("DELETE FROM siege_clans WHERE clan_id=?");
 				statement.setInt(1, getCastle().getOwnerId());
 				statement.execute();
-				statement.close();
 			}
 			
 			getAttackerClans().clear();
@@ -514,7 +505,6 @@ public class Siege implements Siegable
 			PreparedStatement statement = con.prepareStatement("DELETE FROM siege_clans WHERE castle_id=? and type = 2");
 			statement.setInt(1, getCastle().getCastleId());
 			statement.execute();
-			statement.close();
 			
 			getDefenderWaitingClans().clear();
 		}
@@ -747,7 +737,6 @@ public class Siege implements Siegable
 			statement.setInt(1, getCastle().getCastleId());
 			statement.setInt(2, clanId);
 			statement.execute();
-			statement.close();
 			
 			loadSiegeClan();
 		}
@@ -959,8 +948,6 @@ public class Siege implements Siegable
 				else if (typeId == DEFENDER_NOT_APPROVED)
 					addDefenderWaiting(rs.getInt("clan_id"));
 			}
-			rs.close();
-			statement.close();
 		}
 		catch (Exception e)
 		{
@@ -1025,7 +1012,7 @@ public class Siege implements Siegable
 		if (launchTask)
 			startAutoTask(); // Prepare start siege task.
 			
-		StringUtil.printSection(getCastle().getName());
+		Util.printSection(getCastle().getName());
 		_log.info("SiegeManager: New date: " + getCastle().getSiegeDate().getTime());
 		_log.info("SiegeManager: New registration end date: " + getCastle().getSiegeRegistrationEndDate().getTime());
 	}
@@ -1049,7 +1036,6 @@ public class Siege implements Siegable
 			statement.setString(3, String.valueOf(isTimeRegistrationOver()));
 			statement.setInt(4, getCastle().getCastleId());
 			statement.execute();
-			statement.close();
 		}
 		catch (Exception e)
 		{
@@ -1112,11 +1098,32 @@ public class Siege implements Siegable
 		
 		switch (getCastle().getCastleId())
 		{
-			case 3:
-			case 4:
-			case 6:
-			case 7:
-				siegeDate.set(Calendar.DAY_OF_WEEK, Calendar.SUNDAY);
+			case 1: // Gludio
+				siegeDate.set(Calendar.DAY_OF_WEEK, Config.SIEGEDAYCASTLEGludio);
+				break;
+			case 2: // Dion
+				siegeDate.set(Calendar.DAY_OF_WEEK, Config.SIEGEDAYCASTLEDion);
+				break;
+			case 3: // Giran
+				siegeDate.set(Calendar.DAY_OF_WEEK, Config.SIEGEDAYCASTLEGiran);
+				break;
+			case 4: // Oren
+				siegeDate.set(Calendar.DAY_OF_WEEK, Config.SIEGEDAYCASTLEOren);
+				break;
+			case 5: // Aden
+				siegeDate.set(Calendar.DAY_OF_WEEK, Config.SIEGEDAYCASTLEAden);
+				break;
+			case 6: // Innadril/Heine
+				siegeDate.set(Calendar.DAY_OF_WEEK, Config.SIEGEDAYCASTLEInnadril);
+				break;
+			case 7: // Goddard
+				siegeDate.set(Calendar.DAY_OF_WEEK, Config.SIEGEDAYCASTLEGoddard);
+				break;
+			case 8: // Rune
+				siegeDate.set(Calendar.DAY_OF_WEEK, Config.SIEGEDAYCASTLERune);
+				break;
+			case 9: // Schuttgart
+				siegeDate.set(Calendar.DAY_OF_WEEK, Config.SIEGEDAYCASTLESchuttgart);
 				break;
 			
 			default:
@@ -1125,10 +1132,40 @@ public class Siege implements Siegable
 		}
 		
 		// Set next siege date if siege has passed ; add 14 days (2 weeks).
-		siegeDate.add(Calendar.WEEK_OF_YEAR, 2);
+		siegeDate.add(Calendar.WEEK_OF_YEAR, Config.NEXT_SIEGE_TIME);
 		
 		// Set default hour to 18:00. This can be changed - only once - by the castle leader via the chamberlain.
-		siegeDate.set(Calendar.HOUR_OF_DAY, 18);
+		switch (getCastle().getCastleId())
+        {
+            case 1: // Gludio
+                siegeDate.set(Calendar.HOUR_OF_DAY, Config.SIEGEHOURCASTLEGludio);
+                break;
+            case 2: // Dion
+                siegeDate.set(Calendar.HOUR_OF_DAY, Config.SIEGEHOURCASTLEDion);
+                break;
+            case 3: // Giran
+                siegeDate.set(Calendar.HOUR_OF_DAY, Config.SIEGEHOURCASTLEGiran);
+                break;
+            case 4: // Oren
+                siegeDate.set(Calendar.HOUR_OF_DAY, Config.SIEGEHOURCASTLEOren);
+                break;
+            case 5: // Aden
+                siegeDate.set(Calendar.HOUR_OF_DAY, Config.SIEGEHOURCASTLEAden);
+                break;
+            case 6: // Innadril/Heine
+                siegeDate.set(Calendar.HOUR_OF_DAY, Config.SIEGEHOURCASTLEInnadril);
+                break;
+            case 7: // Goddard
+                siegeDate.set(Calendar.HOUR_OF_DAY, Config.SIEGEHOURCASTLEGoddard);
+                break;
+            case 8: // Rune
+                siegeDate.set(Calendar.HOUR_OF_DAY, Config.SIEGEHOURCASTLERune);
+                break;
+            case 9: // Schuttgart
+                siegeDate.set(Calendar.HOUR_OF_DAY, Config.SIEGEHOURCASTLESchuttgart);
+                break;
+        
+        }
 		siegeDate.set(Calendar.MINUTE, 0);
 		siegeDate.set(Calendar.SECOND, 0);
 		

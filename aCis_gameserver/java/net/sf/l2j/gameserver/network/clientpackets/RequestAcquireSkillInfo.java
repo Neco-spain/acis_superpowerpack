@@ -1,24 +1,10 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.network.clientpackets;
 
 import net.sf.l2j.Config;
 import net.sf.l2j.gameserver.datatables.SkillTable;
 import net.sf.l2j.gameserver.datatables.SkillTreeTable;
-import net.sf.l2j.gameserver.datatables.SpellbookTable;
 import net.sf.l2j.gameserver.model.L2PledgeSkillLearn;
+import net.sf.l2j.gameserver.model.L2RebirthSkillLearn;
 import net.sf.l2j.gameserver.model.L2Skill;
 import net.sf.l2j.gameserver.model.L2SkillLearn;
 import net.sf.l2j.gameserver.model.actor.L2Npc;
@@ -62,7 +48,7 @@ public class RequestAcquireSkillInfo extends L2GameClientPacket
 		
 		switch (_skillType)
 		{
-		// General skills
+			// Trance's Rebirth skills.
 			case 0:
 				int skillLvl = activeChar.getSkillLevel(_skillId);
 				if (skillLvl >= _skillLevel)
@@ -73,21 +59,20 @@ public class RequestAcquireSkillInfo extends L2GameClientPacket
 				
 				if (!trainer.getTemplate().canTeach(activeChar.getSkillLearningClassId()))
 					return;
-				
-				for (L2SkillLearn sl : SkillTreeTable.getInstance().getAvailableSkills(activeChar, activeChar.getSkillLearningClassId()))
+					
+				for (L2RebirthSkillLearn rsl : SkillTreeTable.getInstance().getAvailableRebirthSkills(activeChar, activeChar.getSkillLearningClassId()))
 				{
-					if (sl.getId() == _skillId && sl.getLevel() == _skillLevel)
+					if (rsl.getId() == _skillId && rsl.getLevel() == _skillLevel)
 					{
-						AcquireSkillInfo asi = new AcquireSkillInfo(_skillId, _skillLevel, sl.getSpCost(), 0);
-						int spellbookItemId = SpellbookTable.getInstance().getBookForSkill(_skillId, _skillLevel);
-						if (spellbookItemId != 0)
-							asi.addRequirement(99, spellbookItemId, 1, 50);
+						AcquireSkillInfo asi = new AcquireSkillInfo(_skillId, _skillLevel, rsl.getCostSp(), 0);
+						if (Config.LIFE_CRYSTAL_NEEDED && rsl.getItemId() != 0)
+							asi.addRequirement(1, rsl.getItemId(), 1, 0);
 						sendPacket(asi);
 						break;
 					}
 				}
 				break;
-			// Common skills
+			// Common skills 
 			case 1:
 				skillLvl = activeChar.getSkillLevel(_skillId);
 				if (skillLvl >= _skillLevel)

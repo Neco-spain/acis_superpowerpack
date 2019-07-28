@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver;
 
 import java.lang.Thread.UncaughtExceptionHandler;
@@ -27,7 +13,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
 import net.sf.l2j.Config;
-import net.sf.l2j.commons.lang.StringUtil;
+import net.sf.l2j.util.StringUtil;
 
 /**
  * <p>
@@ -317,7 +303,7 @@ public class ThreadPoolManager
 			int count = ptf.getGroup().activeCount();
 			Thread[] threads = new Thread[count + 2];
 			ptf.getGroup().enumerate(threads);
-			StringUtil.append(sb, "General Packet Thread Pool:\r\nTasks in the queue: ", _generalPacketsThreadPool.getQueue().size(), "\r\nShowing threads stack trace:\r\nThere should be ", count, " Threads\r\n");
+			StringUtil.append(sb, "General Packet Thread Pool:\r\n" + "Tasks in the queue: ", String.valueOf(_generalPacketsThreadPool.getQueue().size()), "\r\n" + "Showing threads stack trace:\r\n" + "There should be ", String.valueOf(count), " Threads\r\n");
 			for (Thread t : threads)
 			{
 				if (t == null)
@@ -347,7 +333,7 @@ public class ThreadPoolManager
 			int count = ptf.getGroup().activeCount();
 			Thread[] threads = new Thread[count + 2];
 			ptf.getGroup().enumerate(threads);
-			StringUtil.append(sb, "I/O Packet Thread Pool:\r\nTasks in the queue: ", _ioPacketsThreadPool.getQueue().size(), "\r\nShowing threads stack trace:\r\nThere should be ", count, " Threads\r\n");
+			StringUtil.append(sb, "I/O Packet Thread Pool:\r\n" + "Tasks in the queue: ", String.valueOf(_ioPacketsThreadPool.getQueue().size()), "\r\n" + "Showing threads stack trace:\r\n" + "There should be ", String.valueOf(count), " Threads\r\n");
 			
 			for (Thread t : threads)
 			{
@@ -379,7 +365,7 @@ public class ThreadPoolManager
 			int count = ptf.getGroup().activeCount();
 			Thread[] threads = new Thread[count + 2];
 			ptf.getGroup().enumerate(threads);
-			StringUtil.append(sb, "General Thread Pool:\r\nTasks in the queue: ", _generalThreadPool.getQueue().size(), "\r\nShowing threads stack trace:\r\nThere should be ", count, " Threads\r\n");
+			StringUtil.append(sb, "General Thread Pool:\r\n" + "Tasks in the queue: ", String.valueOf(_generalThreadPool.getQueue().size()), "\r\n" + "Showing threads stack trace:\r\n" + "There should be ", String.valueOf(count), " Threads\r\n");
 			
 			for (Thread t : threads)
 			{

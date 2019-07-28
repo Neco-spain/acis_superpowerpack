@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- *
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.taskmanager.tasks;
 
 import java.util.Calendar;
@@ -23,23 +9,18 @@ import net.sf.l2j.gameserver.instancemanager.RaidBossPointsManager;
 import net.sf.l2j.gameserver.model.L2Clan;
 import net.sf.l2j.gameserver.taskmanager.TaskManager;
 import net.sf.l2j.gameserver.taskmanager.TaskManager.ExecutedTask;
+import net.sf.l2j.gameserver.taskmanager.models.Task;
+import net.sf.l2j.gameserver.taskmanager.models.TaskTypes;
 
-public final class TaskRaidPointsReset extends ATask
+public class TaskRaidPointsReset extends Task
 {
 	private static final Logger _log = Logger.getLogger(TaskRaidPointsReset.class.getName());
-	
-	private static final String NAME = "raid_points_reset";
+	public static final String NAME = "raid_points_reset";
 	
 	@Override
 	public String getName()
 	{
 		return NAME;
-	}
-	
-	@Override
-	public void initializate()
-	{
-		TaskManager.addUniqueTask(NAME, TaskType.TYPE_GLOBAL_TASK, "1", "00:10:00", "", 0);
 	}
 	
 	@Override
@@ -102,8 +83,16 @@ public final class TaskRaidPointsReset extends ATask
 				}
 			}
 			
-			RaidBossPointsManager.getInstance().cleanUp();
+			RaidBossPointsManager.getInstance();
+			RaidBossPointsManager.cleanUp();
 			_log.info("Raid Points Reset Global Task: launched.");
 		}
+	}
+	
+	@Override
+	public void initializate()
+	{
+		super.initializate();
+		TaskManager.addUniqueTask(NAME, TaskTypes.TYPE_GLOBAL_TASK, "1", "00:10:00", "");
 	}
 }

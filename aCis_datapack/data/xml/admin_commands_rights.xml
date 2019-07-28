@@ -7,7 +7,8 @@
 	<aCar name="admin_admin2" accessLevel="1" />
 	<aCar name="admin_admin3" accessLevel="1" />
 	<aCar name="admin_admin4" accessLevel="1" />
-	<aCar name="admin_gmlist" accessLevel="1" />
+	<aCar name="admin_gmliston" accessLevel="1" />
+	<aCar name="admin_gmlistoff" accessLevel="1" />
 	<aCar name="admin_kill" accessLevel="1" />
 	<aCar name="admin_silence" accessLevel="1" />
 	<aCar name="admin_tradeoff" accessLevel="1" />
@@ -15,9 +16,13 @@
 	<aCar name="admin_script_load" accessLevel="1" />
 
 	<!-- ANNOUNCEMENTS -->
+	<aCar name="admin_list_announcements" accessLevel="1" />
+	<aCar name="admin_reload_announcements" accessLevel="1" />
+	<aCar name="admin_announce_announcements" accessLevel="1" />
+	<aCar name="admin_add_announcement" accessLevel="1" />
+	<aCar name="admin_del_announcement" accessLevel="1" />
 	<aCar name="admin_announce" accessLevel="1" />
-	<aCar name="admin_ann" accessLevel="1" />
-	<aCar name="admin_say" accessLevel="1" />
+	<aCar name="admin_announce_menu" accessLevel="1" />
 
 	<!-- BAN -->
 	<aCar name="admin_ban" accessLevel="1" />
@@ -30,6 +35,8 @@
 	<aCar name="admin_unban_chat" accessLevel="1" />
 	<aCar name="admin_jail" accessLevel="1" />
 	<aCar name="admin_unjail" accessLevel="1" />
+	<aCar name="admin_permaban" accessLevel="1" />
+	<aCar name="admin_removeperma" accessLevel="1" />
 
 	<!-- BOOKMARK -->
 	<aCar name="admin_bkpage" accessLevel="1" />
@@ -46,6 +53,7 @@
 	<!-- CACHE -->
 	<aCar name="admin_reload_cache_path" accessLevel="1" />
 	<aCar name="admin_reload_cache_file" accessLevel="1" />
+	<aCar name="admin_fix_cache_crest" accessLevel="1" />
 
 	<!-- CAMERA -->
 	<aCar name="admin_camera" accessLevel="1" />
@@ -179,6 +187,7 @@
 	<!-- GM CHAT -->
 	<aCar name="admin_gmchat" accessLevel="1" />
 	<aCar name="admin_gmchat_menu" accessLevel="1" />
+	<aCar name="admin_quiet" accessLevel="1" />
 
 	<!-- HEAL -->
 	<aCar name="admin_heal" accessLevel="1" />
@@ -247,6 +256,8 @@
 	
 	<!-- OLYMPIADS -->
 	<aCar name="admin_endoly" accessLevel="1" />
+	<aCar name="admin_manualhero" accessLevel="1" />
+	<aCar name="admin_saveoly" accessLevel="1" />
 	<aCar name="admin_sethero" accessLevel="1" />
 	<aCar name="admin_setnoble" accessLevel="1" />
 	
@@ -357,9 +368,125 @@
 	<aCar name="admin_move_to" accessLevel="1" />
 	<aCar name="admin_sendhome" accessLevel="1" />
 
+	<!-- UNBLOCK IP -->
+	<aCar name="admin_unblockip" accessLevel="1" />
+
 	<!-- ZONE -->
 	<aCar name="admin_zone_check" accessLevel="1" />
 	<aCar name="admin_zone_visual" accessLevel="1" />
 	<aCar name="admin_zone_visual_clear" accessLevel="1" />
 	
+	<!-- ADMIN LOCATIONS -->
+	<aCar name="admin_loc" accessLevel="1" />
+	<aCar name="admin_reset_loc" accessLevel="1" />
+	
+	<!-- FENCES -->
+	<aCar name="admin_spawnfence" accessLevel="1" />
+	<aCar name="admin_deletefence" accessLevel="1" />
+	<aCar name="admin_listfence" accessLevel="1" />
+	
+	<!-- BALANCER MENU -->
+	<aCar name="admin_balance" accessLevel="1" />
+	
+	<!-- AIO SYSTEM -->
+	<aCar name="admin_setaio" accessLevel="1" />
+	<aCar name="admin_removeaio" accessLevel="1" />
+	
+	<!-- HWID BAN -->
+	<aCar name="admin_hwid_ban" accessLevel="1" />
+	
+	<!-- ADMIN SURVEY -->
+	<aCar name="admin_survey_start" accessLevel="1" />
+	<aCar name="admin_survey_results" accessLevel="1" />
+	<aCar name="admin_opmore" accessLevel="1" />
+	<aCar name="admin_opless" accessLevel="1" />
+	<aCar name="admin_survey_run1" accessLevel="1" />
+	<aCar name="admin_survey_run2" accessLevel="1" />
+	<aCar name="admin_survey_run3" accessLevel="1" />
+	<aCar name="admin_survey_run4" accessLevel="1" />
+	<aCar name="admin_survey_qset" accessLevel="1" />
+	<aCar name="admin_survey_ans1set" accessLevel="1" />
+	<aCar name="admin_survey_ans2set" accessLevel="1" />
+	<aCar name="admin_survey_ans3set" accessLevel="1" />
+	<aCar name="admin_survey_ans4set" accessLevel="1" />
+	<aCar name="admin_survey_ans5set" accessLevel="1" />
+	<aCar name="admin_survey_end" accessLevel="1" />
+	<aCar name="admin_survey_results" accessLevel="1" />
+	
+	<!-- Vip System -->
+	<aCar name="admin_setvip" accessLevel="1"/>
+	<aCar name="admin_removevip" accessLevel="1"/>
+	<aCar name="admin_viplist" accessLevel="1"/>
+	<aCar name="admin_vipmessage" accessLevel="1"/>
+	<aCar name="admin_cleanvips" accessLevel="1"/>
+	
+	<!-- High Rate Dark Omen Event -->
+	<aCar name="admin_darkopen" accessLevel="1" />
+	<aCar name="admin_darkclose" accessLevel="1" />
+	
+	<!-- PEOPLE CUSTOM GM CHAT -->
+	<aCar name="admin_pplchat" accessLevel="1" />
+
+	<!-- NPC CHAT -->
+	<aCar name="admin_npcchat" accessLevel="1" />
+	<aCar name="admin_npcchat_menu" accessLevel="1" />
+
+	<!-- EVENTS -->
+	<aCar name="admin_events" accessLevel="1" />
+	<aCar name="admin_enableEvent" accessLevel="1" />
+	<aCar name="admin_configureEvent" accessLevel="1" />
+	<aCar name="admin_event_set" accessLevel="1" />
+	<aCar name="admin_event_finish" accessLevel="1" />
+	<aCar name="admin_event_start" accessLevel="1" />
+	
+	<!-- SEND DONATE -->
+    <aCar name="admin_senddonate" accessLevel="1" />
+    <aCar name="admin_givedonate" accessLevel="1" />
+    
+    <!-- MASS HERO -->
+    <aCar name="admin_masshero" accessLevel="1" />
+    
+    <!-- OLYMPIAD STAT -->
+    <aCar name="admin_olympiad_stat" accessLevel="1" />
+    
+    <!-- OLYMPIAD POINTS -->
+    <aCar name="admin_addolypoints" accessLevel="1" />
+    <aCar name="admin_removeolypoints" accessLevel="1" />
+    <aCar name="admin_setolypoints" accessLevel="1" />
+    <aCar name="admin_getolypoints" accessLevel="1" />
+    
+    <!-- DEPORT -->
+    <aCar name="admin_deport" accessLevel="1" />
+    
+    <!-- SET TEAM -->
+    <aCar name="admin_setteam1" accessLevel="1" />
+    <aCar name="admin_setteam2" accessLevel="1" />
+    <aCar name="admin_clearteam" accessLevel="1" />
+    
+    <!-- RECALL ALL -->
+    <aCar name="admin_recallall" accessLevel="1" />
+     
+    <!-- REUSE -->
+    <aCar name="admin_reuse" accessLevel="1" />
+    
+    <!-- HIDE EVENT -->
+    <aCar name="admin_gohide" accessLevel="1" />
+    
+    <!-- CLAN FULL -->
+    <aCar name="admin_clanfull" accessLevel="1" />
+     
+    <!-- WATCH CLAN -->
+    <aCar name="admin_watchclan" accessLevel="1" />
+    <aCar name="admin_stopwatch" accessLevel="1" />
+    
+    <!-- WHO -->
+    <aCar name="admin_who" accessLevel="1" />
+    
+    <!-- MASS RECALL -->
+    <aCar name="admin_recallclan" accessLevel="1" />
+    <aCar name="admin_recallparty" accessLevel="1" />
+    <aCar name="admin_recallally" accessLevel="1" />
+    
+    <!-- WHO IS THE SERVER GOD -->
+    <aCar name="admin_end_god" accessLevel="1" />
 </list>

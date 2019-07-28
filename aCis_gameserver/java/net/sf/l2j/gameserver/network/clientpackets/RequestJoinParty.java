@@ -1,20 +1,7 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.network.clientpackets;
 
-import net.sf.l2j.Config;
+import Extensions.Events.Phoenix.EventManager;
+
 import net.sf.l2j.gameserver.model.BlockList;
 import net.sf.l2j.gameserver.model.L2Party;
 import net.sf.l2j.gameserver.model.L2World;
@@ -45,10 +32,28 @@ public final class RequestJoinParty extends L2GameClientPacket
 		if (requestor == null)
 			return;
 		
+		if (EventManager.getInstance().isRegistered(requestor) && EventManager.getInstance().isSpecialEvent())
+		{
+			requestor.sendMessage("You cannot make a party while in LMS or DM events.");
+			return;
+		}
+		
 		final L2PcInstance target = L2World.getInstance().getPlayer(_name);
 		if (target == null)
 		{
 			requestor.sendPacket(SystemMessageId.FIRST_SELECT_USER_TO_INVITE_TO_PARTY);
+			return;
+		}
+		
+		if (target.isSubmitingPin())
+		{
+			requestor.sendMessage("Unable to do any action while PIN is not submitted");
+			return;
+		}
+				
+		if (requestor.isSubmitingPin())
+		{
+			requestor.sendMessage("Unable to do any action while PIN is not submitted");
 			return;
 		}
 		
@@ -131,14 +136,10 @@ public final class RequestJoinParty extends L2GameClientPacket
 			party.setPendingInvitation(true);
 			
 			requestor.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.YOU_INVITED_S1_TO_PARTY).addPcName(target));
-			if (Config.DEBUG)
-				_log.fine("Sent out a party invitation to " + target.getName());
 		}
 		else
 		{
 			requestor.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_IS_BUSY_TRY_LATER).addPcName(target));
-			if (Config.DEBUG)
-				_log.warning(requestor.getName() + " already received a party invitation");
 		}
 	}
 	
@@ -155,18 +156,11 @@ public final class RequestJoinParty extends L2GameClientPacket
 			requestor.onTransactionRequest(target);
 			target.sendPacket(new AskJoinParty(requestor.getName(), _itemDistribution));
 			requestor.getParty().setPendingInvitation(true);
-			
-			if (Config.DEBUG)
-				_log.fine("Sent out a party invitation to " + target.getName());
-			
 			requestor.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.YOU_INVITED_S1_TO_PARTY).addPcName(target));
 		}
 		else
 		{
 			requestor.sendPacket(SystemMessageId.WAITING_FOR_ANOTHER_REPLY);
-			
-			if (Config.DEBUG)
-				_log.warning(requestor.getName() + " already received a party invitation");
 		}
 	}
 }

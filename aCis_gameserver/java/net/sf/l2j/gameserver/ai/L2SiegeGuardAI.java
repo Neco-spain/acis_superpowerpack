@@ -1,21 +1,8 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.ai;
 
 import java.util.List;
 
+import net.sf.l2j.gameserver.GameTimeController;
 import net.sf.l2j.gameserver.ThreadPoolManager;
 import net.sf.l2j.gameserver.geoengine.PathFinding;
 import net.sf.l2j.gameserver.model.L2CharPosition;
@@ -200,7 +187,7 @@ public class L2SiegeGuardAI extends L2AttackableAI
 		L2Character attackTarget = (L2Character) getTarget();
 		
 		// If target doesn't exist, is dead or if timeout is expired
-		if (attackTarget == null || attackTarget.isAlikeDead() || _attackTimeout < System.currentTimeMillis())
+		if (attackTarget == null || attackTarget.isAlikeDead() || _attackTimeout < GameTimeController.getInstance().getGameTicks())
 		{
 			// Stop hating this target after the attack timeout or if target is dead
 			if (attackTarget != null)

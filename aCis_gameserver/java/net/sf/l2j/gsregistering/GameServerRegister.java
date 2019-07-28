@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gsregistering;
 
 import java.io.IOException;
@@ -42,7 +28,7 @@ public class GameServerRegister
 		
 		LineNumberReader _in = new LineNumberReader(new InputStreamReader(System.in));
 		GameServerTable gameServerTable = GameServerTable.getInstance();
-		System.out.println("Welcome to aCis gameserver registering.");
+		System.out.println("Welcome to L2JxTreme gameserver registering.");
 		System.out.println("Enter the ID of the server you want to register.");
 		System.out.println("-- Type 'help' to get a list of IDs.");
 		System.out.println("-- Type 'clean' to unregister all registered gameservers from this LoginServer.");
@@ -100,7 +86,7 @@ public class GameServerRegister
 						gameServerTable.registerServerOnDB(hexId, id, "");
 						Config.saveHexid(id, new BigInteger(hexId).toString(16), "hexid(server " + id + ").txt");
 						System.out.println("Server registered. Its hexid is saved to 'hexid(server " + id + ").txt'");
-						System.out.println("Put this file in the /config folder of your gameserver and rename it to 'hexid.txt'");
+						System.out.println("Put this file in the /config/Network folder of your gameserver and rename it to 'hexid.txt'");
 						return;
 					}
 				}

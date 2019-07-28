@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package ai.individual;
 
 import ai.AbstractNpcAI;
@@ -35,7 +21,7 @@ import net.sf.l2j.util.Rnd;
 
 public class Sailren extends AbstractNpcAI
 {
-	private static final L2BossZone SAILREN_LAIR = GrandBossManager.getInstance().getZoneById(110015);
+	private static final L2BossZone _nest = GrandBossManager.getInstance().getZoneById(110015);
 	
 	public static final int SAILREN = 29065;
 	
@@ -55,7 +41,7 @@ public class Sailren extends AbstractNpcAI
 	private static final SpawnLocation SAILREN_LOC = new SpawnLocation(27549, -6638, -2008, 0);
 	
 	private final List<L2Npc> _mobs = new CopyOnWriteArrayList<>();
-	private static long _lastAttackTime = 0;
+	private static long _timeTracker;
 	
 	public Sailren(String name, String descr)
 	{
@@ -102,7 +88,7 @@ public class Sailren extends AbstractNpcAI
 	{
 		if (event.equalsIgnoreCase("beginning"))
 		{
-			_lastAttackTime = 0;
+			_timeTracker = 0;
 			
 			for (int i = 0; i < 3; i++)
 			{
@@ -119,11 +105,11 @@ public class Sailren extends AbstractNpcAI
 			final L2Npc temp = addSpawn(DUMMY, SAILREN_LOC, false, 26000, false);
 			
 			// Cast skill every 2,5sec.
-			SAILREN_LAIR.broadcastPacket(new MagicSkillUse(npc, npc, 5090, 1, 2500, 0));
+			_nest.broadcastPacket(new MagicSkillUse(npc, npc, 5090, 1, 2500, 0));
 			startQuestTimer("skill", 2500, temp, null, true);
 			
 			// Cinematic, meanwhile.
-			SAILREN_LAIR.broadcastPacket(new SpecialCamera(temp.getObjectId(), 60, 110, 30, 4000, 4000, 0, 65, 1, 0)); // 4sec
+			_nest.broadcastPacket(new SpecialCamera(temp.getObjectId(), 60, 110, 30, 4000, 4000, 0, 65, 1, 0)); // 4sec
 			
 			startQuestTimer("camera_0", 3900, temp, null, false); // 3sec
 			startQuestTimer("camera_1", 6800, temp, null, false); // 3sec
@@ -133,18 +119,18 @@ public class Sailren extends AbstractNpcAI
 			startQuestTimer("camera_5", 18400, temp, null, false); // 7sec
 		}
 		else if (event.equalsIgnoreCase("skill"))
-			SAILREN_LAIR.broadcastPacket(new MagicSkillUse(npc, npc, 5090, 1, 2500, 0));
+			_nest.broadcastPacket(new MagicSkillUse(npc, npc, 5090, 1, 2500, 0));
 		else if (event.equalsIgnoreCase("camera_0"))
-			SAILREN_LAIR.broadcastPacket(new SpecialCamera(npc.getObjectId(), 100, 180, 30, 3000, 3000, 0, 50, 1, 0));
+			_nest.broadcastPacket(new SpecialCamera(npc.getObjectId(), 100, 180, 30, 3000, 3000, 0, 50, 1, 0));
 		else if (event.equalsIgnoreCase("camera_1"))
-			SAILREN_LAIR.broadcastPacket(new SpecialCamera(npc.getObjectId(), 150, 270, 25, 3000, 3000, 0, 30, 1, 0));
+			_nest.broadcastPacket(new SpecialCamera(npc.getObjectId(), 150, 270, 25, 3000, 3000, 0, 30, 1, 0));
 		else if (event.equalsIgnoreCase("camera_2"))
-			SAILREN_LAIR.broadcastPacket(new SpecialCamera(npc.getObjectId(), 160, 360, 20, 3000, 3000, 10, 15, 1, 0));
+			_nest.broadcastPacket(new SpecialCamera(npc.getObjectId(), 160, 360, 20, 3000, 3000, 10, 15, 1, 0));
 		else if (event.equalsIgnoreCase("camera_3"))
-			SAILREN_LAIR.broadcastPacket(new SpecialCamera(npc.getObjectId(), 160, 450, 10, 3000, 3000, 0, 10, 1, 0));
+			_nest.broadcastPacket(new SpecialCamera(npc.getObjectId(), 160, 450, 10, 3000, 3000, 0, 10, 1, 0));
 		else if (event.equalsIgnoreCase("camera_4"))
 		{
-			SAILREN_LAIR.broadcastPacket(new SpecialCamera(npc.getObjectId(), 160, 560, 0, 3000, 3000, 0, 10, 1, 0));
+			_nest.broadcastPacket(new SpecialCamera(npc.getObjectId(), 160, 560, 0, 3000, 3000, 0, 10, 1, 0));
 			
 			final L2Npc temp = addSpawn(SAILREN, SAILREN_LOC, false, 0, false);
 			GrandBossManager.getInstance().addBoss((L2GrandBossInstance) temp);
@@ -152,18 +138,18 @@ public class Sailren extends AbstractNpcAI
 			
 			// Stop skill task.
 			cancelQuestTimers("skill");
-			SAILREN_LAIR.broadcastPacket(new MagicSkillUse(npc, npc, 5091, 1, 2500, 0));
+			_nest.broadcastPacket(new MagicSkillUse(npc, npc, 5091, 1, 2500, 0));
 			
 			temp.broadcastPacket(new SocialAction(temp, 2));
 		}
 		else if (event.equalsIgnoreCase("camera_5"))
-			SAILREN_LAIR.broadcastPacket(new SpecialCamera(npc.getObjectId(), 70, 560, 0, 500, 7000, -15, 10, 1, 0));
+			_nest.broadcastPacket(new SpecialCamera(npc.getObjectId(), 70, 560, 0, 500, 7000, -15, 10, 1, 0));
 		else if (event.equalsIgnoreCase("unlock"))
 			GrandBossManager.getInstance().setBossStatus(SAILREN, DORMANT);
 		else if (event.equalsIgnoreCase("inactivity"))
 		{
 			// 10 minutes without any attack activity leads to a reset.
-			if ((System.currentTimeMillis() - _lastAttackTime) >= INTERVAL_CHECK)
+			if ((System.currentTimeMillis() - _timeTracker) >= INTERVAL_CHECK)
 			{
 				// Set it dormant.
 				GrandBossManager.getInstance().setBossStatus(SAILREN, DORMANT);
@@ -178,7 +164,7 @@ public class Sailren extends AbstractNpcAI
 				}
 				
 				// Oust all players from area.
-				SAILREN_LAIR.oustAllPlayers();
+				_nest.oustAllPlayers();
 				
 				// Cancel inactivity task.
 				cancelQuestTimers("inactivity");
@@ -187,7 +173,7 @@ public class Sailren extends AbstractNpcAI
 		else if (event.equalsIgnoreCase("oust"))
 		{
 			// Oust all players from area.
-			SAILREN_LAIR.oustAllPlayers();
+			_nest.oustAllPlayers();
 		}
 		
 		return null;
@@ -196,7 +182,7 @@ public class Sailren extends AbstractNpcAI
 	@Override
 	public String onKill(L2Npc npc, L2PcInstance killer, boolean isPet)
 	{
-		if (!_mobs.contains(npc) || !SAILREN_LAIR.getAllowedPlayers().contains(killer.getObjectId()))
+		if (!_mobs.contains(npc) || !_nest.getAllowedPlayers().contains(killer.getObjectId()))
 			return null;
 		
 		switch (npc.getNpcId())
@@ -262,11 +248,11 @@ public class Sailren extends AbstractNpcAI
 	@Override
 	public String onAttack(L2Npc npc, L2PcInstance attacker, int damage, boolean isPet)
 	{
-		if (!_mobs.contains(npc) || !SAILREN_LAIR.getAllowedPlayers().contains(attacker.getObjectId()))
+		if (!_mobs.contains(npc) || !_nest.getAllowedPlayers().contains(attacker.getObjectId()))
 			return null;
 		
 		// Actualize _timeTracker.
-		_lastAttackTime = System.currentTimeMillis();
+		_timeTracker = System.currentTimeMillis();
 		
 		return null;
 	}

@@ -1,20 +1,8 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.model.actor.instance;
 
 import java.util.concurrent.ScheduledFuture;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import net.sf.l2j.gameserver.ThreadPoolManager;
 import net.sf.l2j.gameserver.ai.CtrlIntention;
@@ -45,6 +33,8 @@ import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
 
 public class L2DoorInstance extends L2Character
 {
+	protected static final Logger log = Logger.getLogger(L2DoorInstance.class.getName());
+	
 	/** The castle index in the array of L2Castle this L2Npc belongs to */
 	private int _castleIndex = -2;
 	private int _mapRegion = -1;
@@ -134,7 +124,14 @@ public class L2DoorInstance extends L2Character
 		@Override
 		public void run()
 		{
-			onClose();
+			try
+			{
+				onClose();
+			}
+			catch (Throwable e)
+			{
+				log.log(Level.SEVERE, "", e);
+			}
 		}
 	}
 	
@@ -146,10 +143,26 @@ public class L2DoorInstance extends L2Character
 		@Override
 		public void run()
 		{
-			if (!isOpened())
-				openMe();
-			else
-				closeMe();
+			try
+			{
+				@SuppressWarnings("unused")
+				String doorAction;
+				
+				if (!isOpened())
+				{
+					doorAction = "opened";
+					openMe();
+				}
+				else
+				{
+					doorAction = "closed";
+					closeMe();
+				}
+			}
+			catch (Exception e)
+			{
+				log.warning("Could not auto open/close door ID " + _doorId + " (" + getName() + ")");
+			}
 		}
 	}
 	
@@ -378,23 +391,29 @@ public class L2DoorInstance extends L2Character
 	{
 		if (player.isGM())
 		{
-			final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
+			NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
 			html.setFile("data/html/admin/infos/doorinfo.htm");
+			
 			html.replace("%class%", getClass().getSimpleName());
 			html.replace("%objid%", getObjectId());
 			html.replace("%doorid%", getDoorId());
+			
 			html.replace("%hp%", (int) getCurrentHp());
 			html.replace("%hpmax%", getMaxHp());
+			
 			html.replace("%pdef%", getPDef(null));
 			html.replace("%mdef%", getMDef(null, null));
+			
 			html.replace("%minx%", getXMin());
 			html.replace("%miny%", getYMin());
 			html.replace("%minz%", getZMin());
+			
 			html.replace("%maxx%", getXMax());
 			html.replace("%maxy%", getYMax());
 			html.replace("%maxz%", getZMax());
 			html.replace("%unlock%", isUnlockable() ? "<font color=00FF00>YES<font>" : "<font color=FF0000>NO</font>");
 			html.replace("%isWall%", isWall() ? "<font color=00FF00>YES<font>" : "<font color=FF0000>NO</font>");
+			
 			player.sendPacket(html);
 			player.sendPacket(ActionFailed.STATIC_PACKET);
 		}

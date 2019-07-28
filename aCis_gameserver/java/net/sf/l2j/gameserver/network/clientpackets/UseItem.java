@@ -1,20 +1,9 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.network.clientpackets;
 
+import Extensions.Events.Phoenix.EventManager;
+
 import net.sf.l2j.Config;
+import net.sf.l2j.gameserver.GameTimeController;
 import net.sf.l2j.gameserver.ThreadPoolManager;
 import net.sf.l2j.gameserver.handler.IItemHandler;
 import net.sf.l2j.gameserver.handler.ItemHandler;
@@ -24,13 +13,17 @@ import net.sf.l2j.gameserver.model.actor.instance.L2PetInstance;
 import net.sf.l2j.gameserver.model.holder.SkillHolder;
 import net.sf.l2j.gameserver.model.item.instance.ItemInstance;
 import net.sf.l2j.gameserver.model.item.kind.Item;
+import net.sf.l2j.gameserver.model.item.kind.Weapon;
 import net.sf.l2j.gameserver.model.item.type.ActionType;
+import net.sf.l2j.gameserver.model.item.type.ArmorType;
 import net.sf.l2j.gameserver.model.item.type.EtcItemType;
 import net.sf.l2j.gameserver.model.item.type.WeaponType;
 import net.sf.l2j.gameserver.model.itemcontainer.Inventory;
 import net.sf.l2j.gameserver.model.quest.Quest;
 import net.sf.l2j.gameserver.model.quest.QuestState;
 import net.sf.l2j.gameserver.network.SystemMessageId;
+import net.sf.l2j.gameserver.network.serverpackets.ActionFailed;
+import net.sf.l2j.gameserver.network.serverpackets.CreatureSay;
 import net.sf.l2j.gameserver.network.serverpackets.ItemList;
 import net.sf.l2j.gameserver.network.serverpackets.PetItemList;
 import net.sf.l2j.gameserver.templates.skills.L2SkillType;
@@ -78,21 +71,74 @@ public final class UseItem extends L2GameClientPacket
 		if (activeChar == null)
 			return;
 		
+		if (activeChar.isSubmitingPin())
+		{
+			activeChar.sendMessage("Unable to do any action while PIN is not submitted.");
+			return;
+		}
 		if (activeChar.isInStoreMode())
 		{
 			activeChar.sendPacket(SystemMessageId.ITEMS_UNAVAILABLE_FOR_STORE_MANUFACTURE);
 			return;
 		}
-		
 		if (activeChar.getActiveTradeList() != null)
 		{
 			activeChar.sendPacket(SystemMessageId.CANNOT_PICKUP_OR_USE_ITEM_WHILE_TRADING);
 			return;
 		}
-		
 		final ItemInstance item = activeChar.getInventory().getItemByObjectId(_objectId);
 		if (item == null)
 			return;
+		
+		if (Config.ALT_DISABLE_BOW_CLASSES && item.getItem() instanceof Weapon && ((Weapon) item.getItem()).getItemType() == WeaponType.BOW && Config.DISABLE_BOW_CLASSES.contains(activeChar.getClassId().getId()))
+		{
+			CreatureSay cs = new CreatureSay(0, Say2.PARTYROOM_COMMANDER, "Weapon Protection System", " " + activeChar.getName() + " this item can not be equipped by your class.");
+			activeChar.sendPacket(cs);
+			activeChar.sendPacket(ActionFailed.STATIC_PACKET);
+			return;
+		}
+		if (Config.ALT_DISABLE_DAGGER_CLASSES && item.getItem() instanceof Weapon && ((Weapon) item.getItem()).getItemType() == WeaponType.DAGGER && Config.DISABLE_DAGGER_CLASSES.contains(activeChar.getClassId().getId()))
+		{
+			CreatureSay cs = new CreatureSay(0, Say2.PARTYROOM_COMMANDER, "Weapon Protection System", " " + activeChar.getName() + " this item can not be equipped by your class.");
+			activeChar.sendPacket(cs);
+			activeChar.sendPacket(ActionFailed.STATIC_PACKET);
+			return;
+		}
+		if (Config.ALT_DISABLE_SWORD_CLASSES && item.getItem() instanceof Weapon && ((Weapon) item.getItem()).getItemType() == WeaponType.SWORD && Config.DISABLE_SWORD_CLASSES.contains(activeChar.getClassId().getId()))
+		{
+			CreatureSay cs = new CreatureSay(0, Say2.PARTYROOM_COMMANDER, "Weapon Protection System", " " + activeChar.getName() + " this item can not be equipped by your class.");
+			activeChar.sendPacket(cs);
+			activeChar.sendPacket(ActionFailed.STATIC_PACKET);
+			return;
+		}
+		if (Config.ALT_DISABLE_BLUNT_CLASSES && item.getItem() instanceof Weapon && ((Weapon) item.getItem()).getItemType() == WeaponType.BLUNT && Config.DISABLE_BLUNT_CLASSES.contains(activeChar.getClassId().getId()))
+		{
+			CreatureSay cs = new CreatureSay(0, Say2.PARTYROOM_COMMANDER, "Weapon Protection System", " " + activeChar.getName() + " this item can not be equipped by your class.");
+			activeChar.sendPacket(cs);
+			activeChar.sendPacket(ActionFailed.STATIC_PACKET);
+			return;
+		}
+		if (Config.ALT_DISABLE_DUAL_CLASSES && item.getItem() instanceof Weapon && ((Weapon) item.getItem()).getItemType() == WeaponType.DUAL && Config.DISABLE_DUAL_CLASSES.contains(activeChar.getClassId().getId()))
+		{
+			CreatureSay cs = new CreatureSay(0, Say2.PARTYROOM_COMMANDER, "Weapon Protection System", " " + activeChar.getName() + " this item can not be equipped by your class.");
+			activeChar.sendPacket(cs);
+			activeChar.sendPacket(ActionFailed.STATIC_PACKET);
+			return;
+		}
+		if (Config.ALT_DISABLE_POLE_CLASSES && item.getItem() instanceof Weapon && ((Weapon) item.getItem()).getItemType() == WeaponType.POLE && Config.DISABLE_POLE_CLASSES.contains(activeChar.getClassId().getId()))
+		{
+			CreatureSay cs = new CreatureSay(0, Say2.PARTYROOM_COMMANDER, "Weapon Protection System", " " + activeChar.getName() + " this item can not be equipped by your class.");
+			activeChar.sendPacket(cs);
+			activeChar.sendPacket(ActionFailed.STATIC_PACKET);
+			return;
+		}
+		if (Config.ALT_DISABLE_BIGSWORD_CLASSES && item.getItem() instanceof Weapon && ((Weapon) item.getItem()).getItemType() == WeaponType.BIGSWORD && Config.DISABLE_BIGSWORD_CLASSES.contains(activeChar.getClassId().getId()))
+		{
+			CreatureSay cs = new CreatureSay(0, Say2.PARTYROOM_COMMANDER, "Weapon Protection System", " " + activeChar.getName() + " this item can not be equipped by your class.");
+			activeChar.sendPacket(cs);
+			activeChar.sendPacket(ActionFailed.STATIC_PACKET);
+			return;
+		}
 		
 		if (item.getItem().getType2() == Item.TYPE2_QUEST)
 		{
@@ -116,6 +162,9 @@ public final class UseItem extends L2GameClientPacket
 				}
 			}
 		}
+		
+		if (EventManager.getInstance().isRunning() && EventManager.getInstance().isRegistered(activeChar) && !EventManager.getInstance().getCurrentEvent().onUseItem(activeChar, item))
+			return;
 		
 		if (activeChar.isFishing() && item.getItem().getDefaultAction() != ActionType.fishingshot)
 		{
@@ -174,6 +223,9 @@ public final class UseItem extends L2GameClientPacket
 			return;
 		}
 		
+		if (!activeChar.getInventory().canManipulateWithItemId(item.getItemId()))
+			return;
+		
 		if (!item.isEquipped())
 		{
 			if (!item.getItem().checkCondition(activeChar, activeChar, true))
@@ -199,6 +251,27 @@ public final class UseItem extends L2GameClientPacket
 						activeChar.sendPacket(SystemMessageId.CANNOT_EQUIP_ITEM_DUE_TO_BAD_CONDITION);
 						return;
 					}
+					if (!Config.ALLOW_HEAVY_USE_LIGHT)
+						if (Config.NOTALLOWEDUSELIGHT.contains(activeChar.getClassId().getId()))
+						{
+							if (item.getItemType() == ArmorType.LIGHT)
+							{
+								CreatureSay cs = new CreatureSay(0, Say2.PARTYROOM_COMMANDER, "Armor Protection System", " " + activeChar.getName() + " esta classe nao usa equipes light!");
+								activeChar.sendPacket(cs);
+								return;
+							}
+						}
+					
+					if (!Config.ALLOW_LIGHT_USE_HEAVY)
+						if (Config.NOTALLOWEDUSEHEAVY.contains(activeChar.getClassId().getId()))
+						{
+							if (item.getItemType() == ArmorType.HEAVY)
+							{
+								CreatureSay cs = new CreatureSay(0, Say2.PARTYROOM_COMMANDER, "Armor Protection System", " " + activeChar.getName() + " esta classe nao usa equipes heavy!");
+								activeChar.sendPacket(cs);
+								return;
+							}
+						}
 					
 					// Don't allow weapon/shield equipment if a cursed weapon is equipped
 					if (activeChar.isCursedWeaponEquipped())
@@ -213,7 +286,7 @@ public final class UseItem extends L2GameClientPacket
 			
 			if (activeChar.isAttackingNow())
 			{
-				ThreadPoolManager.getInstance().scheduleGeneral(new WeaponEquipTask(item, activeChar), (activeChar.getAttackEndTime() - System.currentTimeMillis()));
+				ThreadPoolManager.getInstance().scheduleGeneral(new WeaponEquipTask(item, activeChar), (activeChar.getAttackEndTime() - GameTimeController.getInstance().getGameTicks()) * GameTimeController.MILLIS_IN_TICK);
 				return;
 			}
 			

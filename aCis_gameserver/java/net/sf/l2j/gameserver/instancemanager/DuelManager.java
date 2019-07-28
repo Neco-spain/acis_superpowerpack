@@ -1,46 +1,49 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.instancemanager;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Logger;
 
 import net.sf.l2j.gameserver.model.L2Effect;
 import net.sf.l2j.gameserver.model.actor.instance.L2PcInstance;
 import net.sf.l2j.gameserver.model.entity.Duel;
 import net.sf.l2j.gameserver.network.serverpackets.L2GameServerPacket;
 
-public final class DuelManager
+public class DuelManager
 {
-	private final Map<Integer, Duel> _duels = new ConcurrentHashMap<>();
-	private final AtomicInteger _currentDuelId = new AtomicInteger();
+	private static final Logger _log = Logger.getLogger(DuelManager.class.getName());
 	
 	public static final DuelManager getInstance()
 	{
 		return SingletonHolder._instance;
 	}
 	
+	private final List<Duel> _duels;
+	private int _currentDuelId = 0x90;
+	
 	protected DuelManager()
 	{
+		_log.info("Initializing DuelManager");
+		_duels = new ArrayList<>();
+	}
+	
+	private int getNextDuelId()
+	{
+		// In case someone wants to run the server forever :)
+		if (++_currentDuelId >= 2147483640)
+			_currentDuelId = 1;
 		
+		return _currentDuelId;
 	}
 	
 	public Duel getDuel(int duelId)
 	{
-		return _duels.get(duelId);
+		for (Duel duel : _duels)
+		{
+			if (duel.getId() == duelId)
+				return duel;
+		}
+		return null;
 	}
 	
 	public void addDuel(L2PcInstance playerA, L2PcInstance playerB, int partyDuel)
@@ -48,13 +51,61 @@ public final class DuelManager
 		if (playerA == null || playerB == null)
 			return;
 		
-		final int duelId = _currentDuelId.incrementAndGet();
-		_duels.put(duelId, new Duel(playerA, playerB, partyDuel, duelId));
+		// return if a player has PvPFlag
+		String engagedInPvP = "The duel was canceled because a duelist engaged in PvP combat.";
+		if (partyDuel == 1)
+		{
+			boolean playerInPvP = false;
+			for (L2PcInstance temp : playerA.getParty().getPartyMembers())
+			{
+				if (temp.getPvpFlag() != 0)
+				{
+					playerInPvP = true;
+					break;
+				}
+			}
+			
+			if (!playerInPvP)
+			{
+				for (L2PcInstance temp : playerB.getParty().getPartyMembers())
+				{
+					if (temp.getPvpFlag() != 0)
+					{
+						playerInPvP = true;
+						break;
+					}
+				}
+			}
+			
+			// A player has PvP flag
+			if (playerInPvP)
+			{
+				for (L2PcInstance temp : playerA.getParty().getPartyMembers())
+					temp.sendMessage(engagedInPvP);
+				
+				for (L2PcInstance temp : playerB.getParty().getPartyMembers())
+					temp.sendMessage(engagedInPvP);
+				
+				return;
+			}
+		}
+		else
+		{
+			if (playerA.getPvpFlag() != 0 || playerB.getPvpFlag() != 0)
+			{
+				playerA.sendMessage(engagedInPvP);
+				playerB.sendMessage(engagedInPvP);
+				return;
+			}
+		}
+		
+		Duel duel = new Duel(playerA, playerB, partyDuel, getNextDuelId());
+		_duels.add(duel);
 	}
 	
-	public void removeDuel(int duelId)
+	public void removeDuel(Duel duel)
 	{
-		_duels.remove(duelId);
+		_duels.remove(duel);
 	}
 	
 	public void doSurrender(L2PcInstance player)
@@ -62,21 +113,20 @@ public final class DuelManager
 		if (player == null || !player.isInDuel())
 			return;
 		
-		final Duel duel = getDuel(player.getDuelId());
-		if (duel != null)
-			duel.doSurrender(player);
+		Duel duel = getDuel(player.getDuelId());
+		duel.doSurrender(player);
 	}
 	
 	/**
 	 * Updates player states.
-	 * @param player - the dying player
+	 * @param player - the dieing player
 	 */
 	public void onPlayerDefeat(L2PcInstance player)
 	{
 		if (player == null || !player.isInDuel())
 			return;
 		
-		final Duel duel = getDuel(player.getDuelId());
+		Duel duel = getDuel(player.getDuelId());
 		if (duel != null)
 			duel.onPlayerDefeat(player);
 	}
@@ -91,7 +141,7 @@ public final class DuelManager
 		if (player == null || !player.isInDuel() || buff == null)
 			return;
 		
-		final Duel duel = getDuel(player.getDuelId());
+		Duel duel = getDuel(player.getDuelId());
 		if (duel != null)
 			duel.onBuff(player, buff);
 	}
@@ -105,7 +155,7 @@ public final class DuelManager
 		if (player == null || !player.isInDuel())
 			return;
 		
-		final Duel duel = getDuel(player.getDuelId());
+		Duel duel = getDuel(player.getDuelId());
 		if (duel != null)
 			duel.onRemoveFromParty(player);
 	}
@@ -120,8 +170,11 @@ public final class DuelManager
 		if (player == null || !player.isInDuel())
 			return;
 		
-		final Duel duel = getDuel(player.getDuelId());
+		Duel duel = getDuel(player.getDuelId());
 		if (duel == null)
+			return;
+		
+		if (duel.getPlayerA() == null || duel.getPlayerB() == null)
 			return;
 		
 		if (duel.getPlayerA() == player)

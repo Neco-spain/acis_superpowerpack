@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.model.quest;
 
 import java.sql.Connection;
@@ -734,27 +720,27 @@ public class Quest extends ManagedScript
 		
 		if (result.endsWith(".htm") || result.endsWith(".html"))
 		{
-			final NpcHtmlMessage html = new NpcHtmlMessage(npc == null ? 0 : npc.getNpcId());
+			NpcHtmlMessage npcReply = new NpcHtmlMessage(npc == null ? 0 : npc.getNpcId());
 			if (isRealQuest())
-				html.setFile("./data/scripts/quests/" + getName() + "/" + result);
+				npcReply.setFile("./data/scripts/quests/" + getName() + "/" + result);
 			else
-				html.setFile("./data/scripts/" + getDescr() + "/" + getName() + "/" + result);
+				npcReply.setFile("./data/scripts/" + getDescr() + "/" + getName() + "/" + result);
 			
 			if (npc != null)
-				html.replace("%objectId%", npc.getObjectId());
+				npcReply.replace("%objectId%", npc.getObjectId());
 			
-			player.sendPacket(html);
+			player.sendPacket(npcReply);
 			player.sendPacket(ActionFailed.STATIC_PACKET);
 		}
 		else if (result.startsWith("<html>"))
 		{
-			final NpcHtmlMessage html = new NpcHtmlMessage(npc == null ? 0 : npc.getNpcId());
-			html.setHtml(result);
+			NpcHtmlMessage npcReply = new NpcHtmlMessage(npc == null ? 0 : npc.getNpcId());
+			npcReply.setHtml(result);
 			
 			if (npc != null)
-				html.replace("%objectId%", npc.getObjectId());
+				npcReply.replace("%objectId%", npc.getObjectId());
 			
-			player.sendPacket(html);
+			player.sendPacket(npcReply);
 			player.sendPacket(ActionFailed.STATIC_PACKET);
 		}
 		else
@@ -778,9 +764,9 @@ public class Quest extends ManagedScript
 		
 		if (player != null && player.isGM())
 		{
-			final NpcHtmlMessage html = new NpcHtmlMessage(0);
-			html.setHtml("<html><body><title>Script error</title>" + e.getMessage() + "</body></html>");
-			player.sendPacket(html);
+			NpcHtmlMessage npcReply = new NpcHtmlMessage(0);
+			npcReply.setHtml("<html><body><title>Script error</title>" + e.getMessage() + "</body></html>");
+			player.sendPacket(npcReply);
 			player.sendPacket(ActionFailed.STATIC_PACKET);
 			return true;
 		}
@@ -1473,12 +1459,14 @@ public class Quest extends ManagedScript
 	@Override
 	public boolean equals(Object o)
 	{
-		if (o instanceof Quest)
-		{
-			Quest q = (Quest) o;
-			return _id == q._id && _name.equals(q._name);
-		}
+		Quest q = (Quest) o;
 		
-		return false;
+		if (_id != q._id)
+			return false;
+		
+		if (!_name.equals(q._name))
+			return false;
+		
+		return true;
 	}
 }

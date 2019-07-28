@@ -1,18 +1,6 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.model.actor;
+
+import Extensions.Events.Phoenix.EventManager;
 
 import net.sf.l2j.Config;
 import net.sf.l2j.gameserver.ai.CtrlIntention;
@@ -56,6 +44,7 @@ import net.sf.l2j.gameserver.network.serverpackets.PetStatusUpdate;
 import net.sf.l2j.gameserver.network.serverpackets.RelationChanged;
 import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
 import net.sf.l2j.gameserver.network.serverpackets.TeleportToLocation;
+import net.sf.l2j.gameserver.taskmanager.DecayTaskManager;
 
 public abstract class L2Summon extends L2Playable
 {
@@ -96,6 +85,10 @@ public abstract class L2Summon extends L2Playable
 		_ai = new L2SummonAI(new AIAccessor());
 		
 		setXYZInvisible(owner.getX() + 50, owner.getY() + 100, owner.getZ() + 100);
+		
+		if (EventManager.getInstance().isRunning() && EventManager.getInstance().isRegistered(owner))
+			for (L2Skill skill : EventManager.getInstance().getCurrentEvent().getSummonBuffs(owner))
+				skill.getEffects(owner, this);
 	}
 	
 	@Override
@@ -228,12 +221,14 @@ public abstract class L2Summon extends L2Playable
 	{
 		if (player.isGM())
 		{
-			final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
+			NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
 			html.setFile("data/html/admin/petinfo.htm");
-			html.replace("%name%", getName() == null ? "N/A" : getName());
+			String name = getName();
+			html.replace("%name%", name == null ? "N/A" : name);
 			html.replace("%level%", getLevel());
 			html.replace("%exp%", getStat().getExp());
-			html.replace("%owner%", " <a action=\"bypass -h admin_character_info " + getActingPlayer().getName() + "\">" + getActingPlayer().getName() + "</a>");
+			String owner = getActingPlayer().getName();
+			html.replace("%owner%", " <a action=\"bypass -h admin_character_info " + owner + "\">" + owner + "</a>");
 			html.replace("%class%", getClass().getSimpleName());
 			html.replace("%ai%", hasAI() ? getAI().getIntention().name() : "NULL");
 			html.replace("%hp%", (int) getStatus().getCurrentHp() + "/" + getStat().getMaxHp());
@@ -243,7 +238,8 @@ public abstract class L2Summon extends L2Playable
 			
 			if (this instanceof L2PetInstance)
 			{
-				html.replace("%inv%", " <a action=\"bypass admin_show_pet_inv " + getActingPlayer().getObjectId() + "\">view</a>");
+				int objId = getActingPlayer().getObjectId();
+				html.replace("%inv%", " <a action=\"bypass admin_show_pet_inv " + objId + "\">view</a>");
 				html.replace("%food%", ((L2PetInstance) this).getCurrentFed() + "/" + ((L2PetInstance) this).getPetLevelData().getPetMaxFeed());
 				html.replace("%load%", ((L2PetInstance) this).getInventory().getTotalWeight() + "/" + ((L2PetInstance) this).getMaxLoad());
 			}
@@ -341,6 +337,11 @@ public abstract class L2Summon extends L2Playable
 			}
 		}
 		return true;
+	}
+	
+	public void stopDecay()
+	{
+		DecayTaskManager.getInstance().cancel(this);
 	}
 	
 	@Override

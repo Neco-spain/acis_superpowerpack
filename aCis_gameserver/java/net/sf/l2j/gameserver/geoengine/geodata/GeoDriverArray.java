@@ -124,17 +124,17 @@ public final class GeoDriverArray extends GeoData
 							case GeoStructure.TYPE_FLAT_L2D:
 								_blocks[blockX + ix][blockY + iy] = loadFlatBlock(buffer);
 								break;
-							
+								
 							case GeoStructure.TYPE_COMPLEX_L2J:
 							case GeoStructure.TYPE_COMPLEX_L2D:
 								_blocks[blockX + ix][blockY + iy] = loadComplexBlock(buffer);
 								break;
-							
+								
 							case GeoStructure.TYPE_MULTILAYER_L2J:
 							case GeoStructure.TYPE_MULTILAYER_L2D:
 								_blocks[blockX + ix][blockY + iy] = loadMultilayerBlock(buffer);
 								break;
-							
+								
 							default:
 								throw new IllegalArgumentException("Unknown block type: " + type);
 						}
@@ -150,11 +150,11 @@ public final class GeoDriverArray extends GeoData
 							case GeoStructure.TYPE_FLAT_L2J_L2OFF:
 								_blocks[blockX + ix][blockY + iy] = loadFlatBlock(buffer);
 								break;
-							
+								
 							case GeoStructure.TYPE_COMPLEX_L2OFF:
 								_blocks[blockX + ix][blockY + iy] = loadComplexBlock(buffer);
 								break;
-							
+								
 							default:
 								_blocks[blockX + ix][blockY + iy] = loadMultilayerBlock(buffer);
 								break;
@@ -186,6 +186,7 @@ public final class GeoDriverArray extends GeoData
 	
 	/**
 	 * Creates FlatBlock.
+	 * 
 	 * @param bb : Input byte buffer.
 	 * @return byte[] : Flat block in byte array.
 	 */
@@ -210,6 +211,7 @@ public final class GeoDriverArray extends GeoData
 	
 	/**
 	 * Creates ComplexBlock.
+	 * 
 	 * @param bb : Input byte buffer.
 	 * @return byte[] : Complex block in byte array.
 	 */
@@ -218,7 +220,7 @@ public final class GeoDriverArray extends GeoData
 		// initialize buffer
 		byte[] buffer = new byte[GeoStructure.BLOCK_CELLS * 3 + 1];
 		
-		buffer[0] = GeoStructure.COMPLEX;
+		buffer[0] = GeoStructure.COMPLEX; 
 		
 		// load data
 		for (int i = 0; i < GeoStructure.BLOCK_CELLS; i++)
@@ -254,6 +256,7 @@ public final class GeoDriverArray extends GeoData
 	
 	/**
 	 * Creates MultilayerBlock.
+	 * 
 	 * @param bb : Input byte buffer.
 	 * @return byte[] : Multilayer block in byte array.
 	 */
@@ -388,7 +391,7 @@ public final class GeoDriverArray extends GeoData
 				return true;
 				
 			default:
-				throw new IllegalArgumentException("Unknown geodata block type.");
+				throw new IllegalArgumentException("Unknown geodata block type.");	
 		}
 	}
 	
@@ -409,15 +412,15 @@ public final class GeoDriverArray extends GeoData
 			case GeoStructure.FLAT:
 				index = 1;
 				break;
-			
+				
 			case GeoStructure.COMPLEX:
 				index = ((geoX % GeoStructure.BLOCK_CELLS_X) * GeoStructure.BLOCK_CELLS_Y + (geoY % GeoStructure.BLOCK_CELLS_Y)) * 3 + 2;
 				break;
-			
+				
 			case GeoStructure.MULTILAYER:
 				index = getCellIndexNearest(geoX, geoY, worldZ, block) + 1;
 				break;
-			
+				
 			default:
 				throw new IllegalArgumentException("Unknown geodata block type.");
 		}
@@ -443,15 +446,15 @@ public final class GeoDriverArray extends GeoData
 			case GeoStructure.FLAT:
 				index = 1;
 				break;
-			
+				
 			case GeoStructure.COMPLEX:
 				index = ((geoX % GeoStructure.BLOCK_CELLS_X) * GeoStructure.BLOCK_CELLS_Y + (geoY % GeoStructure.BLOCK_CELLS_Y)) * 3 + 2;
 				break;
-			
+				
 			case GeoStructure.MULTILAYER:
 				index = getCellIndexAbove(geoX, geoY, worldZ, block) + 1;
 				break;
-			
+				
 			default:
 				throw new IllegalArgumentException("Unknown geodata block type.");
 		}
@@ -477,15 +480,15 @@ public final class GeoDriverArray extends GeoData
 			case GeoStructure.FLAT:
 				index = 1;
 				break;
-			
+				
 			case GeoStructure.COMPLEX:
 				index = ((geoX % GeoStructure.BLOCK_CELLS_X) * GeoStructure.BLOCK_CELLS_Y + (geoY % GeoStructure.BLOCK_CELLS_Y)) * 3 + 2;
 				break;
-			
+				
 			case GeoStructure.MULTILAYER:
 				index = getCellIndexBelow(geoX, geoY, worldZ, block) + 1;
 				break;
-			
+				
 			default:
 				throw new IllegalArgumentException("Unknown geodata block type.");
 		}
@@ -536,7 +539,7 @@ public final class GeoDriverArray extends GeoData
 			index += buffer[index] * 3 + 1;
 		}
 		
-		// get layers count
+		// get layers count 
 		byte layers = buffer[index++];
 		
 		// loop though all cell layers, find closest layer and return cell index
@@ -588,7 +591,7 @@ public final class GeoDriverArray extends GeoData
 		while (layers-- > 0)
 		{
 			// get layer height and compare height with worldZ
-			final short height = (short) (buffer[index + 1] & 0x00FF | buffer[index + 2] << 8);
+			final short height = (short) (buffer[index + 1] & 0x00FF | buffer[index + 2] << 8); 
 			if (height > worldZ)
 				break;
 			
@@ -603,7 +606,7 @@ public final class GeoDriverArray extends GeoData
 		// return index (it is first, which is above given worldZ)
 		return index;
 	}
-	
+
 	/**
 	 * Returns cell data of the cell in closes layer to given coordinates.
 	 * @param geoX : Geo X.
@@ -631,7 +634,7 @@ public final class GeoDriverArray extends GeoData
 		while (layers-- > 0)
 		{
 			// get layer height and compare height with worldZ
-			final short height = (short) (buffer[index + 1] & 0x00FF | buffer[index + 2] << 8);
+			final short height = (short) (buffer[index + 1] & 0x00FF | buffer[index + 2] << 8); 
 			if (height >= worldZ)
 				break;
 			

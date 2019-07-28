@@ -4,5 +4,6 @@ CREATE TABLE IF NOT EXISTS `accounts` (
   `lastactive` DECIMAL(20),
   `access_level` INT(3) NOT NULL DEFAULT 0,
   `lastServer` INT(4) DEFAULT 1,
+  `lastIp` VARCHAR(15),
   PRIMARY KEY (`login`)
 );

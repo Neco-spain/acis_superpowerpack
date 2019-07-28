@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.network.clientpackets;
 
 import java.util.logging.Level;
@@ -58,6 +44,12 @@ public final class RequestSetAllyCrest extends L2GameClientPacket
 			return;
 		}
 		
+		if (activeChar.isSubmitingPin())
+		{
+			activeChar.sendMessage("Unable to do any action while PIN is not submitted");
+			return;
+		}
+		
 		if (activeChar.getAllyId() != 0)
 		{
 			L2Clan leaderclan = ClanTable.getInstance().getClan(activeChar.getAllyId());
@@ -72,7 +64,7 @@ public final class RequestSetAllyCrest extends L2GameClientPacket
 			if (!remove)
 				newId = IdFactory.getInstance().getNextId();
 			
-			if (!remove && !CrestCache.getInstance().saveCrest(CrestType.ALLY, newId, _data))
+			if (!remove && !CrestCache.saveCrest(CrestType.ALLY, newId, _data))
 			{
 				_log.log(Level.INFO, "Error saving crest for ally " + leaderclan.getAllyName() + " [" + leaderclan.getAllyId() + "]");
 				return;

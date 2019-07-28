@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.datatables;
 
 import java.io.File;
@@ -184,36 +170,63 @@ public class PetDataTable
 		return false;
 	}
 	
-	private static String getPetItemsAsNpc(int npcId)
+	public static int[] getPetItemsAsNpc(int npcId)
 	{
 		switch (npcId)
 		{
 			case 12077:// wolf pet a
-				return "2375";
-				
+				return new int[]
+				{
+					2375
+				};
 			case 12564:// Sin Eater
-				return "4425";
+				return new int[]
+				{
+					4425
+				};
 				
 			case 12311:// hatchling of wind
 			case 12312:// hatchling of star
 			case 12313:// hatchling of twilight
-				return "3500, 3501, 3502";
+				return new int[]
+				{
+					3500,
+					3501,
+					3502
+				};
 				
 			case 12526:// wind strider
 			case 12527:// Star strider
 			case 12528:// Twilight strider
-				return "4422, 4423, 4424";
+				return new int[]
+				{
+					4422,
+					4423,
+					4424
+				};
 				
 			case 12621:// Wyvern
-				return "8663";
+				return new int[]
+				{
+					8663
+				};
 				
 			case 12780:// Baby Buffalo
 			case 12782:// Baby Cougar
 			case 12781:// Baby Kookaburra
-				return "6648, 6649, 6650";
+				return new int[]
+				{
+					6648,
+					6649,
+					6650
+				};
 				
-			default:// unknown item id.. should never happen
-				return "0";
+				// unknown item id.. should never happen
+			default:
+				return new int[]
+				{
+					0
+				};
 		}
 	}
 	
@@ -232,8 +245,15 @@ public class PetDataTable
 		{
 			PreparedStatement statement = con.prepareStatement("SELECT name FROM pets p, items i WHERE p.item_obj_id = i.object_id AND name=? AND i.item_id IN (?)");
 			statement.setString(1, name);
-			statement.setString(2, getPetItemsAsNpc(petNpcId));
 			
+			String cond = "";
+			for (int it : PetDataTable.getPetItemsAsNpc(petNpcId))
+			{
+				if (!cond.isEmpty())
+					cond += ", ";
+				cond += it;
+			}
+			statement.setString(2, cond);
 			ResultSet rset = statement.executeQuery();
 			result = rset.next();
 			rset.close();

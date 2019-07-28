@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.model.actor.template;
 
 import net.sf.l2j.gameserver.templates.StatsSet;
@@ -25,6 +11,7 @@ public class CharTemplate
 	private final int _baseWIT;
 	private final int _baseMEN;
 	
+	private final double _baseCpMax;
 	private final double _baseHpMax;
 	private final double _baseMpMax;
 	
@@ -57,6 +44,7 @@ public class CharTemplate
 		_baseWIT = set.getInteger("wit", 43);
 		_baseMEN = set.getInteger("men", 20);
 		
+		_baseCpMax = set.getDouble("cp", 0);
 		_baseHpMax = set.getDouble("hp", 0);
 		_baseMpMax = set.getDouble("mp", 0);
 		
@@ -109,6 +97,11 @@ public class CharTemplate
 	public int getBaseMEN()
 	{
 		return _baseMEN;
+	}
+	
+	public double getBaseCpMax(int level)
+	{
+		return _baseCpMax;
 	}
 	
 	public double getBaseHpMax(int level)

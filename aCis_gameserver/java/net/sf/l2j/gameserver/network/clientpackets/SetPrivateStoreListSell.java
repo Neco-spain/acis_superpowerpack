@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.network.clientpackets;
 
 import net.sf.l2j.Config;
@@ -70,13 +56,37 @@ public final class SetPrivateStoreListSell extends L2GameClientPacket
 			return;
 		}
 		
+		if (Config.MIN_PVP_TO_USE_STORE != 0 || Config.MIN_PK_TO_USE_STORE != 0)
+		{
+			if (player.getPvpKills() <= Config.MIN_PVP_TO_USE_STORE)
+			{
+				player.sendMessage("You must have at least " + Config.MIN_PVP_TO_USE_STORE + " pvp kills in order to open private store.");
+				player.setPrivateStoreType(L2PcInstance.STORE_PRIVATE_NONE);
+				player.broadcastUserInfo();
+				return;
+			}
+			else if (player.getPkKills() <= Config.MIN_PK_TO_USE_STORE)
+			{
+				player.sendMessage("You must have at least " + Config.MIN_PK_TO_USE_STORE + " pk kills in order to open private store.");
+				player.setPrivateStoreType(L2PcInstance.STORE_PRIVATE_NONE);
+				player.broadcastUserInfo();
+				return;
+			}
+		}
+		
 		if (!player.getAccessLevel().allowTransaction())
 		{
 			player.sendPacket(SystemMessageId.YOU_ARE_NOT_AUTHORIZED_TO_DO_THAT);
 			return;
 		}
 		
-		if (AttackStanceTaskManager.getInstance().isInAttackStance(player) || (player.isCastingNow() || player.isCastingSimultaneouslyNow()) || player.isInDuel())
+		if (player.isSubmitingPin())
+		{
+			player.sendMessage("Unable to do any action while PIN is not submitted");
+			return;
+		}
+		
+		if (AttackStanceTaskManager.getInstance().get(player) || (player.isCastingNow() || player.isCastingSimultaneouslyNow()) || player.isInDuel())
 		{
 			player.sendPacket(SystemMessageId.YOU_ARE_NOT_AUTHORIZED_TO_DO_THAT);
 			player.sendPacket(new PrivateStoreManageListSell(player, _packageSale));

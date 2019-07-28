@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.cache;
 
 import java.io.BufferedReader;
@@ -23,6 +9,7 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 import net.sf.l2j.commons.io.UnicodeReader;
+import net.sf.l2j.commons.io.filters.HtmFilter;
 
 /**
  * @author Layane, reworked by Java-man and Hasha
@@ -31,8 +18,8 @@ public class HtmCache
 {
 	private static final Logger _log = Logger.getLogger(HtmCache.class.getName());
 	
-	private final Map<Integer, String> _htmCache;
-	private final FileFilter _htmFilter;
+	private static final Map<Integer, String> _htmCache = new HashMap<>();
+	private static final FileFilter _htmFilter = new HtmFilter();
 	
 	public static HtmCache getInstance()
 	{
@@ -41,8 +28,7 @@ public class HtmCache
 	
 	protected HtmCache()
 	{
-		_htmCache = new HashMap<>();
-		_htmFilter = new HtmFilter();
+		reload();
 	}
 	
 	/**
@@ -51,7 +37,6 @@ public class HtmCache
 	public void reload()
 	{
 		_log.info("HtmCache: Cache cleared, had " + _htmCache.size() + " entries.");
-		
 		_htmCache.clear();
 	}
 	
@@ -69,7 +54,7 @@ public class HtmCache
 	 * Parse given directory, all html files are loaded to HtmCache.
 	 * @param dir : Directory to be parsed.
 	 */
-	private void parseDir(File dir)
+	private static void parseDir(File dir)
 	{
 		for (File file : dir.listFiles(_htmFilter))
 		{
@@ -85,26 +70,31 @@ public class HtmCache
 	 * @param file : File to be cached.
 	 * @return String : Content of the file.
 	 */
-	private String loadFile(File file)
+	private static String loadFile(File file)
 	{
-		try (FileInputStream fis = new FileInputStream(file); UnicodeReader ur = new UnicodeReader(fis, "UTF-8"); BufferedReader br = new BufferedReader(ur))
+		if (file.exists() && _htmFilter.accept(file) && !file.isDirectory())
 		{
-			final StringBuilder sb = new StringBuilder();
-			String line;
-			
-			while ((line = br.readLine()) != null)
-				sb.append(line).append('\n');
-			
-			final String content = sb.toString().replaceAll("\r\n", "\n");
-			
-			_htmCache.put(file.getPath().replace("\\", "/").hashCode(), content);
-			return content;
+			try (FileInputStream fis = new FileInputStream(file); UnicodeReader ur = new UnicodeReader(fis, "UTF-8"); BufferedReader br = new BufferedReader(ur))
+			{
+				StringBuilder sb = new StringBuilder();
+				String line;
+				
+				while ((line = br.readLine()) != null)
+					sb.append(line).append('\n');
+				
+				String content = sb.toString().replaceAll("\r\n", "\n");
+				sb = null;
+				
+				_htmCache.put(file.getPath().replace("\\", "/").hashCode(), content);
+				return content;
+			}
+			catch (Exception e)
+			{
+				_log.warning("HtmCache: problem with loading file " + e);
+			}
 		}
-		catch (Exception e)
-		{
-			_log.warning("HtmCache: problem with loading file " + e);
-			return null;
-		}
+		
+		return null;
 	}
 	
 	/**
@@ -114,12 +104,7 @@ public class HtmCache
 	 */
 	public boolean isLoadable(String path)
 	{
-		final File file = new File(path);
-		
-		if (file.exists() && _htmFilter.accept(file) && !file.isDirectory())
-			return loadFile(file) != null;
-		
-		return false;
+		return loadFile(new File(path)) != null;
 	}
 	
 	/**
@@ -134,12 +119,7 @@ public class HtmCache
 		
 		String content = _htmCache.get(filename.hashCode());
 		if (content == null)
-		{
-			final File file = new File(filename);
-			
-			if (file.exists() && _htmFilter.accept(file) && !file.isDirectory())
-				content = loadFile(file);
-		}
+			content = loadFile(new File(filename));
 		
 		return content;
 	}
@@ -164,15 +144,5 @@ public class HtmCache
 	private static class SingletonHolder
 	{
 		protected static final HtmCache _instance = new HtmCache();
-	}
-	
-	protected class HtmFilter implements FileFilter
-	{
-		@Override
-		public boolean accept(File file)
-		{
-			// directories, *.htm and *.html files
-			return file.isDirectory() || file.getName().endsWith(".htm") || file.getName().endsWith(".html");
-		}
 	}
 }

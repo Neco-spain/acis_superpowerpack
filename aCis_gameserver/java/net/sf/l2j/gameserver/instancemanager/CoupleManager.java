@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.instancemanager;
 
 import java.sql.Connection;
@@ -23,9 +9,12 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import net.sf.l2j.L2DatabaseFactory;
+import net.sf.l2j.gameserver.datatables.SkillTable;
+import net.sf.l2j.gameserver.model.L2Skill;
 import net.sf.l2j.gameserver.model.L2World;
 import net.sf.l2j.gameserver.model.actor.instance.L2PcInstance;
 import net.sf.l2j.gameserver.model.entity.Couple;
+import net.sf.l2j.gameserver.model.item.instance.ItemInstance;
 
 /**
  * @author evill33t
@@ -64,7 +53,6 @@ public class CoupleManager
 			while (rs.next())
 				_couples.add(new Couple(rs.getInt("id")));
 			
-			rs.close();
 			statement.close();
 			
 			_log.info("CoupleManager : Loaded " + getCouples().size() + " couples.");
@@ -92,6 +80,43 @@ public class CoupleManager
 			_couples.add(_new);
 			player1.setCoupleId(_new.getId());
 			player2.setCoupleId(_new.getId());
+		}
+	}
+	
+	public void checkCouple(L2PcInstance activeChar)
+	{
+		if (activeChar.isMarried())
+		{
+			if (activeChar.getInventory().getItemByItemId(9140) == null)
+			{
+				activeChar.addItem("Couple", 9140, 1, activeChar, true);
+				activeChar.getInventory().updateDatabase();
+			}
+			L2Skill skill;
+			skill = SkillTable.getInstance().getInfo(3260, 1);
+			activeChar.addSkill(skill, true);
+			skill = SkillTable.getInstance().getInfo(3261, 1);
+			activeChar.addSkill(skill, true);
+			skill = SkillTable.getInstance().getInfo(3262, 1);
+			activeChar.addSkill(skill, true);
+		}
+		else
+		{
+			for (ItemInstance item : activeChar.getInventory().getItems())
+			{
+				if (item.getItemId() == 9140)
+				{
+					activeChar.destroyItem("Removing Couple", item, activeChar, true);
+					activeChar.getInventory().updateDatabase();
+				}
+			}
+			L2Skill skill;
+			skill = SkillTable.getInstance().getInfo(3260, 1);
+			activeChar.removeSkill(skill, true);
+			skill = SkillTable.getInstance().getInfo(3261, 1);
+			activeChar.removeSkill(skill, true);
+			skill = SkillTable.getInstance().getInfo(3262, 1);
+			activeChar.removeSkill(skill, true);
 		}
 	}
 	

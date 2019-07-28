@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.model.actor.knownlist;
 
 import net.sf.l2j.gameserver.ai.CtrlEvent;
@@ -35,16 +21,11 @@ public class MonsterKnownList extends AttackableKnownList
 		if (!super.addKnownObject(object))
 			return false;
 		
-		// object is player
-		if (object instanceof L2PcInstance)
-		{
-			// get monster AI
-			final L2CharacterAI ai = ((L2MonsterInstance) _activeObject).getAI();
-			
-			// AI exists and is idle, set active
-			if (ai != null && ai.getIntention() == CtrlIntention.IDLE)
-				ai.setIntention(CtrlIntention.ACTIVE, null);
-		}
+		final L2CharacterAI ai = getActiveChar().getAI(); // force AI creation
+		
+		// Set the L2MonsterInstance Intention to ACTIVE if the state was IDLE
+		if (object instanceof L2PcInstance && ai != null && ai.getIntention() == CtrlIntention.IDLE)
+			ai.setIntention(CtrlIntention.ACTIVE, null);
 		
 		return true;
 	}
@@ -58,17 +39,20 @@ public class MonsterKnownList extends AttackableKnownList
 		if (!(object instanceof L2Character))
 			return true;
 		
-		// get monster
-		final L2MonsterInstance monster = (L2MonsterInstance) _activeObject;
+		// Notify the L2MonsterInstance AI with EVT_FORGET_OBJECT
+		if (getActiveChar().hasAI())
+			getActiveChar().getAI().notifyEvent(CtrlEvent.EVT_FORGET_OBJECT, object);
 		
-		// monster has AI, inform about lost object
-		if (monster.hasAI())
-			monster.getAI().notifyEvent(CtrlEvent.EVT_FORGET_OBJECT, object);
-		
-		// clear agro list
-		if (monster.isVisible() && getKnownType(L2PcInstance.class).isEmpty())
-			monster.clearAggroList();
+		// Clear the _aggroList of the L2MonsterInstance
+		if (getActiveChar().isVisible() && getKnownType(L2PcInstance.class).isEmpty())
+			getActiveChar().clearAggroList();
 		
 		return true;
+	}
+	
+	@Override
+	public final L2MonsterInstance getActiveChar()
+	{
+		return (L2MonsterInstance) super.getActiveChar();
 	}
 }

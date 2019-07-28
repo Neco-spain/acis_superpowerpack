@@ -1,23 +1,9 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.network.clientpackets;
 
 import net.sf.l2j.Config;
-import net.sf.l2j.commons.lang.StringUtil;
 import net.sf.l2j.gameserver.datatables.CharNameTable;
 import net.sf.l2j.gameserver.datatables.CharTemplateTable;
+import net.sf.l2j.gameserver.datatables.ItemTable;
 import net.sf.l2j.gameserver.datatables.SkillTable;
 import net.sf.l2j.gameserver.datatables.SkillTreeTable;
 import net.sf.l2j.gameserver.idfactory.IdFactory;
@@ -29,6 +15,7 @@ import net.sf.l2j.gameserver.model.actor.instance.L2PcInstance;
 import net.sf.l2j.gameserver.model.actor.template.PcTemplate;
 import net.sf.l2j.gameserver.model.item.instance.ItemInstance;
 import net.sf.l2j.gameserver.model.item.kind.Item;
+import net.sf.l2j.gameserver.model.itemcontainer.PcInventory;
 import net.sf.l2j.gameserver.model.quest.Quest;
 import net.sf.l2j.gameserver.network.serverpackets.CharCreateFail;
 import net.sf.l2j.gameserver.network.serverpackets.CharCreateOk;
@@ -38,7 +25,7 @@ import net.sf.l2j.gameserver.util.Util;
 @SuppressWarnings("unused")
 public final class CharacterCreate extends L2GameClientPacket
 {
-	// cSdddddddddddd
+	
 	private String _name;
 	private int _race;
 	private byte _sex;
@@ -71,6 +58,7 @@ public final class CharacterCreate extends L2GameClientPacket
 		_face = (byte) readD();
 	}
 	
+	@SuppressWarnings("null")
 	@Override
 	protected void runImpl()
 	{
@@ -80,7 +68,7 @@ public final class CharacterCreate extends L2GameClientPacket
 			return;
 		}
 		
-		if (!StringUtil.isValidPlayerName(_name))
+		if (!Util.isValidPlayerName(_name))
 		{
 			sendPacket(new CharCreateFail(CharCreateFail.REASON_INCORRECT_NAME));
 			return;
@@ -108,7 +96,7 @@ public final class CharacterCreate extends L2GameClientPacket
 		PcTemplate template = null;
 		
 		/*
-		 * DrHouse: Since checks for duplicate names are done using SQL, lock must be held until data is written to DB as well.
+		 * Since checks for duplicate names are done using SQL, lock must be held until data is written to DB as well.
 		 */
 		synchronized (CharNameTable.getInstance())
 		{
@@ -117,7 +105,13 @@ public final class CharacterCreate extends L2GameClientPacket
 				sendPacket(new CharCreateFail(CharCreateFail.REASON_TOO_MANY_CHARACTERS));
 				return;
 			}
-			
+			if (Config.FORBIDDEN_NAMES.length > 1)
+				for (String st : Config.FORBIDDEN_NAMES)
+					if (_name.toLowerCase().contains(st.toLowerCase()))
+					{
+						sendPacket(new CharCreateFail(CharCreateFail.REASON_CREATION_FAILED));
+						return;
+					}
 			if (CharNameTable.doesCharNameExist(_name))
 			{
 				sendPacket(new CharCreateFail(CharCreateFail.REASON_NAME_ALREADY_EXISTS));
@@ -145,8 +139,40 @@ public final class CharacterCreate extends L2GameClientPacket
 		L2World.getInstance().storeObject(newChar);
 		
 		newChar.addAdena("Init", Config.STARTING_ADENA, null, false);
-		newChar.setXYZInvisible(template.getSpawnX(), template.getSpawnY(), template.getSpawnZ());
-		newChar.setTitle("");
+		if (Config.CUSTOM_SPAWN_CLASS)
+		{
+			if (newChar.isMageClass())
+				newChar.setXYZInvisible(Config.SPANW_MAGE_X, Config.SPANW_MAGE_Y, Config.SPANW_MAGE_Z);
+			else
+				newChar.setXYZInvisible(Config.SPANW_FIGHTER_X, Config.SPANW_FIGHTER_Y, Config.SPANW_FIGHTER_Z);
+		}
+		else
+		{
+			newChar.setXYZInvisible(template.getSpawnX(), template.getSpawnY(), template.getSpawnZ());
+		}
+		
+		for (int[] startingItems : Config.CUSTOM_STARTER_ITEMS)
+		{
+			if (newChar == null)
+			{
+				continue;
+			}
+			PcInventory inv = newChar.getInventory();
+			if (ItemTable.getInstance().createDummyItem(startingItems[0]).isStackable())
+			{
+				inv.addItem("Starter Items", startingItems[0], startingItems[1], newChar, null);
+			}
+			else
+			{
+				for (int i = 0; i < startingItems[1]; i++)
+				{
+					inv.addItem("Starter Items", startingItems[0], 1, newChar, null);
+				}
+			}
+		}
+		
+		if (Config.ALLOW_START_TITLE)
+			newChar.setTitle(Config.START_TITLE);
 		
 		newChar.registerShortCut(new L2ShortCut(0, 0, 3, 2, -1, 1)); // attack shortcut
 		newChar.registerShortCut(new L2ShortCut(3, 0, 3, 5, -1, 1)); // take shortcut
@@ -161,6 +187,16 @@ public final class CharacterCreate extends L2GameClientPacket
 			if (item.isEquipable())
 			{
 				if (newChar.getActiveWeaponItem() == null || !(item.getItem().getType2() != Item.TYPE2_WEAPON))
+					newChar.getInventory().equipItemAndRecord(item);
+			}
+		}
+		
+		if (Config.ALLOW_SANTA_HAT_ON_NEW_CHARACTERS)
+		{
+			ItemInstance item = newChar.getInventory().addItem("Init", 7836, 1, newChar, null);
+			if (item.isEquipable())
+			{
+				if (newChar.getActiveWeaponItem() == null || !(item.getItem().getType2() != Item.TYPE2_ACCESSORY))
 					newChar.getInventory().equipItemAndRecord(item);
 			}
 		}

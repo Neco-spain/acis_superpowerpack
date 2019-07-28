@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.skills;
 
 import java.io.File;
@@ -24,6 +10,7 @@ import java.util.StringTokenizer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import net.sf.l2j.Config;
 import net.sf.l2j.gameserver.model.ChanceCondition;
 import net.sf.l2j.gameserver.model.L2Skill;
 import net.sf.l2j.gameserver.model.base.Race;
@@ -39,6 +26,7 @@ import net.sf.l2j.gameserver.skills.conditions.Condition;
 import net.sf.l2j.gameserver.skills.conditions.ConditionElementSeed;
 import net.sf.l2j.gameserver.skills.conditions.ConditionForceBuff;
 import net.sf.l2j.gameserver.skills.conditions.ConditionGameTime;
+import net.sf.l2j.gameserver.skills.conditions.ConditionGameTime.CheckGameTime;
 import net.sf.l2j.gameserver.skills.conditions.ConditionLogicAnd;
 import net.sf.l2j.gameserver.skills.conditions.ConditionLogicNot;
 import net.sf.l2j.gameserver.skills.conditions.ConditionLogicOr;
@@ -66,6 +54,7 @@ import net.sf.l2j.gameserver.skills.conditions.ConditionTargetHpMinMax;
 import net.sf.l2j.gameserver.skills.conditions.ConditionTargetNpcId;
 import net.sf.l2j.gameserver.skills.conditions.ConditionTargetRaceId;
 import net.sf.l2j.gameserver.skills.conditions.ConditionUsingItemType;
+import net.sf.l2j.gameserver.skills.conditions.ConditionWithSkill;
 import net.sf.l2j.gameserver.skills.effects.EffectChanceSkillTrigger;
 import net.sf.l2j.gameserver.skills.effects.EffectTemplate;
 import net.sf.l2j.gameserver.templates.StatsSet;
@@ -226,7 +215,17 @@ abstract class DocumentBase
 			count = Integer.decode(getValue(attrs.getNamedItem("count").getNodeValue(), template));
 		
 		if (attrs.getNamedItem("time") != null)
+		{
 			time = Integer.decode(getValue(attrs.getNamedItem("time").getNodeValue(), template));
+			if (Config.ENABLE_MODIFY_SKILL_DURATION)
+				if (Config.SKILL_DURATION_LIST.containsKey(((L2Skill) template).getId()))
+					if (((L2Skill) template).getLevel() < 100)
+						time = Config.SKILL_DURATION_LIST.get(((L2Skill) template).getId());
+					else if (((L2Skill) template).getLevel() >= 100 && ((L2Skill) template).getLevel() < 140)
+						time += Config.SKILL_DURATION_LIST.get(((L2Skill) template).getId());
+					else if (((L2Skill) template).getLevel() > 140)
+						time = Config.SKILL_DURATION_LIST.get(((L2Skill) template).getId());
+		}
 		else if (((L2Skill) template).getBuffDuration() > 0)
 			time = ((L2Skill) template).getBuffDuration() / 1000 / count;
 		
@@ -312,7 +311,9 @@ abstract class DocumentBase
 		lt = new EffectTemplate(attachCond, applayCond, name, lambda, count, time, abnormal, stackType, stackOrder, icon, effectPower, type, trigId, trigLvl, chance);
 		
 		parseTemplate(n, lt);
-		if (template instanceof L2Skill)
+		if (template instanceof Item)
+			((Item) template).attach(lt);
+		else if (template instanceof L2Skill)
 		{
 			if (self)
 				((L2Skill) template).attachSelf(lt);
@@ -700,10 +701,15 @@ abstract class DocumentBase
 		for (int i = 0; i < attrs.getLength(); i++)
 		{
 			Node a = attrs.item(i);
-			if ("night".equalsIgnoreCase(a.getNodeName()))
+			if ("skill".equalsIgnoreCase(a.getNodeName()))
 			{
 				boolean val = Boolean.valueOf(a.getNodeValue());
-				cond = joinAnd(cond, new ConditionGameTime(val));
+				cond = joinAnd(cond, new ConditionWithSkill(val));
+			}
+			else if ("night".equalsIgnoreCase(a.getNodeName()))
+			{
+				boolean val = Boolean.valueOf(a.getNodeValue());
+				cond = joinAnd(cond, new ConditionGameTime(CheckGameTime.NIGHT, val));
 			}
 		}
 		

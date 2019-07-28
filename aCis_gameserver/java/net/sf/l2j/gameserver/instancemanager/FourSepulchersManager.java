@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.instancemanager;
 
 import java.sql.Connection;
@@ -63,12 +49,15 @@ public class FourSepulchersManager
 	
 	protected boolean _firstTimeRun;
 	protected boolean _inEntryTime = false;
+	protected boolean _inWarmUpTime = false;
 	protected boolean _inAttackTime = false;
+	protected boolean _inCoolDownTime = false;
 	
 	protected ScheduledFuture<?> _changeCoolDownTimeTask = null;
 	protected ScheduledFuture<?> _changeEntryTimeTask = null;
 	protected ScheduledFuture<?> _changeWarmUpTimeTask = null;
 	protected ScheduledFuture<?> _changeAttackTimeTask = null;
+	protected ScheduledFuture<?> _onPartyAnnihilatedTask = null;
 	
 	private final int[][] _startHallSpawn =
 	{
@@ -286,7 +275,9 @@ public class FourSepulchersManager
 		}
 		
 		_inEntryTime = false;
+		_inWarmUpTime = false;
 		_inAttackTime = false;
+		_inCoolDownTime = false;
 		_firstTimeRun = true;
 		
 		initFixedInfo();
@@ -1647,7 +1638,9 @@ public class FourSepulchersManager
 		{
 			// _log.info("FourSepulchersManager:In Entry Time");
 			_inEntryTime = true;
+			_inWarmUpTime = false;
 			_inAttackTime = false;
+			_inCoolDownTime = false;
 			
 			long interval = 0;
 			// if this is first launch - search time when entry time will be ended:
@@ -1656,7 +1649,7 @@ public class FourSepulchersManager
 			if (_firstTimeRun)
 				interval = _entryTimeEnd - Calendar.getInstance().getTimeInMillis();
 			else
-				interval = Config.FS_TIME_ENTRY * 60000l; // else use stupid method
+				interval = Config.FS_TIME_ENTRY * 60000l; // else use this method
 				
 			// launching saying process...
 			ThreadPoolManager.getInstance().scheduleGeneral(new ManagerSay(), 0);
@@ -1677,7 +1670,9 @@ public class FourSepulchersManager
 		{
 			// _log.info("FourSepulchersManager:In Warm-Up Time");
 			_inEntryTime = true;
+			_inWarmUpTime = false;
 			_inAttackTime = false;
+			_inCoolDownTime = false;
 			
 			long interval = 0;
 			// searching time when warmup time will be ended:
@@ -1705,7 +1700,9 @@ public class FourSepulchersManager
 		{
 			// _log.info("FourSepulchersManager:In Attack Time");
 			_inEntryTime = false;
+			_inWarmUpTime = false;
 			_inAttackTime = true;
+			_inCoolDownTime = false;
 			
 			locationShadowSpawns();
 			
@@ -1762,7 +1759,9 @@ public class FourSepulchersManager
 		{
 			// _log.info("FourSepulchersManager:In Cool-Down Time");
 			_inEntryTime = false;
+			_inWarmUpTime = false;
 			_inAttackTime = false;
+			_inCoolDownTime = true;
 			
 			clean();
 			
@@ -1795,7 +1794,7 @@ public class FourSepulchersManager
 	
 	public void showHtmlFile(L2PcInstance player, String file, L2Npc npc, L2PcInstance member)
 	{
-		final NpcHtmlMessage html = new NpcHtmlMessage(npc.getObjectId());
+		NpcHtmlMessage html = new NpcHtmlMessage(npc.getObjectId());
 		html.setFile("data/html/sepulchers/" + file);
 		if (member != null)
 			html.replace("%member%", member.getName());

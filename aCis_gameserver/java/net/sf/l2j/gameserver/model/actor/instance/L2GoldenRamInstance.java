@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.model.actor.instance;
 
 import java.util.StringTokenizer;
@@ -27,7 +13,6 @@ import net.sf.l2j.gameserver.network.serverpackets.NpcHtmlMessage;
  * This instance leads behaviors of Golden Ram mofos, where shown htm is different according to your quest condition. Abercrombie shows you multisells, Selina shows you Buffs list, when Pierce shows you "Quest" link.<br>
  * <br>
  * Kahman shows you only different htm. He's enthusiastic lazy-ass.
- * @author Tryskell
  */
 public class L2GoldenRamInstance extends L2NpcInstance
 {
@@ -115,7 +100,7 @@ public class L2GoldenRamInstance extends L2NpcInstance
 			}
 		}
 		
-		final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
+		NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
 		html.setFile(filename);
 		html.replace("%objectId%", getObjectId());
 		player.sendPacket(html);
@@ -147,7 +132,7 @@ public class L2GoldenRamInstance extends L2NpcInstance
 					val = 4;
 				}
 				
-				final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
+				NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
 				html.setFile("data/html/default/31556-" + val + ".htm");
 				player.sendPacket(html);
 				return;

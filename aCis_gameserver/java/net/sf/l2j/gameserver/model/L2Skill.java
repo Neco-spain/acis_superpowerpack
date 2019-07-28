@@ -1,18 +1,6 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.model;
+
+import Extensions.Events.Phoenix.EventManager;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -61,7 +49,7 @@ public abstract class L2Skill implements IChanceSkillTrigger
 	
 	private static final L2Object[] _emptyTargetList = new L2Object[0];
 	
-	public static final int SKILL_LUCKY = 194;
+	public static final int SKILL_LUCKY = 0;
 	public static final int SKILL_CREATE_COMMON = 1320;
 	public static final int SKILL_CREATE_DWARVEN = 172;
 	public static final int SKILL_CRYSTALLIZE = 248;
@@ -111,8 +99,15 @@ public abstract class L2Skill implements IChanceSkillTrigger
 	}
 	
 	// conditional values
+	public final static int COND_RUNNING = 0x0001;
+	public final static int COND_WALKING = 0x0002;
+	public final static int COND_SIT = 0x0004;
 	public final static int COND_BEHIND = 0x0008;
 	public final static int COND_CRIT = 0x0010;
+	public final static int COND_LOWHP = 0x0020;
+	public final static int COND_ROBES = 0x0040;
+	public final static int COND_CHARGES = 0x0080;
+	public final static int COND_SHIELD = 0x0100;
 	
 	private final int _id;
 	private final int _level;
@@ -965,6 +960,11 @@ public abstract class L2Skill implements IChanceSkillTrigger
 		return isMagic();
 	}
 	
+	public final boolean useFishShot()
+	{
+		return ((_skillType == L2SkillType.PUMPING) || (_skillType == L2SkillType.REELING));
+	}
+	
 	public final int getWeaponsAllowed()
 	{
 		return _weaponsAllowed;
@@ -1418,6 +1418,14 @@ public abstract class L2Skill implements IChanceSkillTrigger
 							
 							if (!checkForAreaOffensiveSkills(activeChar, obj, this, srcInArena))
 								continue;
+							if (EventManager.getInstance().isRunning() && (obj instanceof L2PcInstance || obj instanceof L2Summon) && activeChar instanceof L2PcInstance)
+							{
+								L2PcInstance o = obj.getActingPlayer();
+								if (EventManager.getInstance().isRegistered(activeChar) && 
+									EventManager.getInstance().isRegistered(o) &&
+									EventManager.getInstance().areTeammates(o, (L2PcInstance) activeChar))
+									continue;
+							}
 							
 							if (onlyFirst)
 								return new L2Character[]
@@ -1459,6 +1467,16 @@ public abstract class L2Skill implements IChanceSkillTrigger
 					
 					if (!checkForAreaOffensiveSkills(activeChar, obj, this, srcInArena))
 						continue;
+					
+					if (EventManager.getInstance().isRunning() && (obj instanceof L2PcInstance || obj instanceof L2Summon) && activeChar instanceof L2PcInstance)
+					{
+						L2PcInstance o = obj.getActingPlayer();
+						if (EventManager.getInstance().getCurrentEvent().numberOfTeams() > 1 && 
+							EventManager.getInstance().isRegistered((L2PcInstance)activeChar) && 
+							EventManager.getInstance().isRegistered(o) && 
+							EventManager.getInstance().getCurrentEvent().getTeam(o) == EventManager.getInstance().getCurrentEvent().getTeam((L2PcInstance)activeChar))
+							continue;
+					}
 					
 					targetList.add(obj);
 				}
@@ -1880,7 +1898,7 @@ public abstract class L2Skill implements IChanceSkillTrigger
 				}
 				
 				// Corpse mob only available for half time
-				if (_skillType == L2SkillType.DRAIN && !DecayTaskManager.getInstance().isCorpseActionAllowed((L2Attackable) target))
+				if (_skillType == L2SkillType.DRAIN && DecayTaskManager.getInstance().getTasks().containsKey(target) && (System.currentTimeMillis() - DecayTaskManager.getInstance().getTasks().get(target)) > DecayTaskManager.DEFAULT_DECAY_TIME / 2)
 				{
 					activeChar.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.CORPSE_TOO_OLD_SKILL_NOT_USED));
 					return _emptyTargetList;
@@ -1994,11 +2012,20 @@ public abstract class L2Skill implements IChanceSkillTrigger
 					final L2Summon targetSummon = (L2Summon) target;
 					final L2PcInstance summonOwner = targetSummon.getActingPlayer();
 					
-					if (activeChar instanceof L2PcInstance && activeChar.getPet() != targetSummon && !targetSummon.isDead() && (summonOwner.getPvpFlag() != 0 || summonOwner.getKarma() > 0) || (summonOwner.isInsideZone(ZoneId.PVP) && activeChar.isInsideZone(ZoneId.PVP)) || (summonOwner.isInDuel() && ((L2PcInstance) activeChar).isInDuel() && summonOwner.getDuelId() == ((L2PcInstance) activeChar).getDuelId()))
-						return new L2Character[]
-						{
+					if (activeChar instanceof L2PcInstance)
+					{
+						if (EventManager.getInstance().isRunning() && EventManager.getInstance().isRegistered(activeChar) && EventManager.getInstance().isRegistered(summonOwner) && !EventManager.getInstance().areTeammates(summonOwner, (L2PcInstance) activeChar))
+							return new L2Character[]
+								{
 							targetSummon
-						};
+								};
+						
+						if (activeChar.getPet() != targetSummon && !targetSummon.isDead() && (summonOwner.getPvpFlag() != 0 || summonOwner.getKarma() > 0) || (summonOwner.isInsideZone(ZoneId.PVP) && ((L2PcInstance) activeChar).isInsideZone(ZoneId.PVP)) || (summonOwner.isInDuel() && ((L2PcInstance) activeChar).isInDuel() && summonOwner.getDuelId() == ((L2PcInstance) activeChar).getDuelId()))
+							return new L2Character[]
+								{
+							targetSummon
+								};
+					}
 				}
 				return _emptyTargetList;
 			}
@@ -2122,7 +2149,7 @@ public abstract class L2Skill implements IChanceSkillTrigger
 		return true;
 	}
 	
-	public final List<Func> getStatFuncs(L2Character player)
+	public final List<Func> getStatFuncs(L2Effect effect, L2Character player)
 	{
 		if (_funcTemplates == null)
 			return Collections.emptyList();

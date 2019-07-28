@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package ai.individual;
 
 import ai.AbstractNpcAI;
@@ -40,16 +26,11 @@ import net.sf.l2j.gameserver.templates.StatsSet;
 import net.sf.l2j.gameserver.util.Util;
 import net.sf.l2j.util.Rnd;
 
-/**
- * That AI is heavily based on Valakas/Baium scripts.<br>
- * It uses the 29019 dummy id in order to register it (addBoss and statsSet), but 3 different templates according the situation.
- * @author Tryskell
- */
 public class Antharas extends AbstractNpcAI
 {
-	private static final L2BossZone ANTHARAS_LAIR = GrandBossManager.getInstance().getZoneById(110001);
+	private static final L2BossZone _antharasLair = GrandBossManager.getInstance().getZoneById(110001);
 	
-	private static final int[] ANTHARAS_IDS =
+	private static final int[] antharasIds =
 	{
 		29066,
 		29067,
@@ -90,7 +71,7 @@ public class Antharas extends AbstractNpcAI
 			29076
 		};
 		
-		registerMobs(ANTHARAS_IDS, QuestEventType.ON_ATTACK, QuestEventType.ON_SPAWN);
+		registerMobs(antharasIds, QuestEventType.ON_ATTACK, QuestEventType.ON_SPAWN);
 		registerMobs(allIds, QuestEventType.ON_KILL);
 		
 		final StatsSet info = GrandBossManager.getInstance().getStatsSet(ANTHARAS);
@@ -149,7 +130,7 @@ public class Antharas extends AbstractNpcAI
 				GrandBossManager.getInstance().setBossStatus(ANTHARAS, DORMANT);
 				
 				// Drop all players from the zone.
-				ANTHARAS_LAIR.oustAllPlayers();
+				_antharasLair.oustAllPlayers();
 				
 				// Drop tasks.
 				dropTimers(npc);
@@ -162,21 +143,21 @@ public class Antharas extends AbstractNpcAI
 		}
 		// Spawn cinematic, regen_task and choose of skill.
 		else if (event.equalsIgnoreCase("spawn_1"))
-			ANTHARAS_LAIR.broadcastPacket(new SpecialCamera(npc.getObjectId(), 700, 13, -19, 0, 20000, 0, 0, 1, 0));
+			_antharasLair.broadcastPacket(new SpecialCamera(npc.getObjectId(), 700, 13, -19, 0, 20000, 0, 0, 1, 0));
 		else if (event.equalsIgnoreCase("spawn_2"))
 		{
 			npc.broadcastPacket(new SocialAction(npc, 1));
-			ANTHARAS_LAIR.broadcastPacket(new SpecialCamera(npc.getObjectId(), 700, 13, 0, 6000, 20000, 0, 0, 1, 0));
+			_antharasLair.broadcastPacket(new SpecialCamera(npc.getObjectId(), 700, 13, 0, 6000, 20000, 0, 0, 1, 0));
 		}
 		else if (event.equalsIgnoreCase("spawn_3"))
-			ANTHARAS_LAIR.broadcastPacket(new SpecialCamera(npc.getObjectId(), 3700, 0, -3, 0, 10000, 0, 0, 1, 0));
+			_antharasLair.broadcastPacket(new SpecialCamera(npc.getObjectId(), 3700, 0, -3, 0, 10000, 0, 0, 1, 0));
 		else if (event.equalsIgnoreCase("spawn_4"))
 		{
 			npc.broadcastPacket(new SocialAction(npc, 2));
-			ANTHARAS_LAIR.broadcastPacket(new SpecialCamera(npc.getObjectId(), 1100, 0, -3, 22000, 30000, 0, 0, 1, 0));
+			_antharasLair.broadcastPacket(new SpecialCamera(npc.getObjectId(), 1100, 0, -3, 22000, 30000, 0, 0, 1, 0));
 		}
 		else if (event.equalsIgnoreCase("spawn_5"))
-			ANTHARAS_LAIR.broadcastPacket(new SpecialCamera(npc.getObjectId(), 1100, 0, -3, 300, 7000, 0, 0, 1, 0));
+			_antharasLair.broadcastPacket(new SpecialCamera(npc.getObjectId(), 1100, 0, -3, 300, 7000, 0, 0, 1, 0));
 		else if (event.equalsIgnoreCase("spawn_6"))
 		{
 			// stores current time for inactivity task.
@@ -261,7 +242,7 @@ public class Antharas extends AbstractNpcAI
 		else if (event.equalsIgnoreCase("antharas_unlock"))
 			GrandBossManager.getInstance().setBossStatus(ANTHARAS, DORMANT);
 		else if (event.equalsIgnoreCase("remove_players"))
-			ANTHARAS_LAIR.oustAllPlayers();
+			_antharasLair.oustAllPlayers();
 		
 		return super.onAdvEvent(event, npc, player);
 	}
@@ -279,7 +260,7 @@ public class Antharas extends AbstractNpcAI
 		if (npc.isInvul())
 			return null;
 		
-		if (!ANTHARAS_LAIR.isInsideZone(attacker))
+		if (!_antharasLair.isInsideZone(attacker))
 		{
 			attacker.teleToLocation(82698, 148638, -3473, 0);
 			return null;
@@ -309,8 +290,8 @@ public class Antharas extends AbstractNpcAI
 			dropTimers(npc);
 			
 			// Launch death animation.
-			ANTHARAS_LAIR.broadcastPacket(new SpecialCamera(npc.getObjectId(), 1200, 20, -10, 10000, 13000, 0, 0, 0, 0));
-			ANTHARAS_LAIR.broadcastPacket(new PlaySound(1, "BS01_D", 0, 0, 0, 0, 0));
+			_antharasLair.broadcastPacket(new SpecialCamera(npc.getObjectId(), 1200, 20, -10, 10000, 13000, 0, 0, 0, 0));
+			_antharasLair.broadcastPacket(new PlaySound(1, "BS01_D", 0, 0, 0, 0, 0));
 			startQuestTimer("die_1", 8000, null, null, false);
 			
 			GrandBossManager.getInstance().setBossStatus(ANTHARAS, DEAD);
@@ -466,22 +447,22 @@ public class Antharas extends AbstractNpcAI
 	 */
 	private void updateAntharas()
 	{
-		final int playersNumber = ANTHARAS_LAIR.getAllowedPlayers().size();
+		final int playersNumber = _antharasLair.getAllowedPlayers().size();
 		if (playersNumber < 45)
 		{
-			_antharasId = ANTHARAS_IDS[0];
+			_antharasId = antharasIds[0];
 			_skillRegen = SkillTable.getInstance().getInfo(4239, 1);
 			_minionTimer = 180000;
 		}
 		else if (playersNumber < 63)
 		{
-			_antharasId = ANTHARAS_IDS[1];
+			_antharasId = antharasIds[1];
 			_skillRegen = SkillTable.getInstance().getInfo(4240, 1);
 			_minionTimer = 150000;
 		}
 		else
 		{
-			_antharasId = ANTHARAS_IDS[2];
+			_antharasId = antharasIds[2];
 			_skillRegen = SkillTable.getInstance().getInfo(4241, 1);
 			_minionTimer = 120000;
 		}
@@ -489,7 +470,6 @@ public class Antharas extends AbstractNpcAI
 	
 	/**
 	 * Drop timers, meaning Antharas is dead or inactivity task occured.
-	 * @param npc : The NPC to affect.
 	 */
 	private void dropTimers(L2Npc npc)
 	{

@@ -1,20 +1,5 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.network.serverpackets;
 
-import net.sf.l2j.Config;
 import net.sf.l2j.gameserver.instancemanager.SevenSigns;
 import net.sf.l2j.gameserver.instancemanager.SevenSignsFestival;
 import net.sf.l2j.gameserver.network.SystemMessageId;
@@ -122,19 +107,17 @@ public class SSQStatus extends L2GameServerPacket
 					duskPercent = Math.round(((float) duskTotalScore / (float) totalOverallScore) * 100);
 				}
 				
-				if (Config.DEBUG)
-				{
-					_log.info("Dusk Stone Score: " + duskStoneScore + " - Dawn Stone Score: " + dawnStoneScore);
-					_log.info("Dusk Festival Score: " + duskFestivalScore + " - Dawn Festival Score: " + dawnFestivalScore);
-					_log.info("Dusk Score: " + duskTotalScore + " - Dawn Score: " + dawnTotalScore);
-					_log.info("Overall Score: " + totalOverallScore);
-					_log.info("");
-					if (totalStoneScore == 0)
-						_log.info("Dusk Prop: 0 - Dawn Prop: 0");
-					else
-						_log.info("Dusk Prop: " + ((duskStoneScore / totalStoneScore) * 500) + " - Dawn Prop: " + ((dawnStoneScore / totalStoneScore) * 500));
-					_log.info("Dusk %: " + duskPercent + " - Dawn %: " + dawnPercent);
-				}
+				
+				_log.info("Dusk Stone Score: " + duskStoneScore + " - Dawn Stone Score: " + dawnStoneScore);
+				_log.info("Dusk Festival Score: " + duskFestivalScore + " - Dawn Festival Score: " + dawnFestivalScore);
+				_log.info("Dusk Score: " + duskTotalScore + " - Dawn Score: " + dawnTotalScore);
+				_log.info("Overall Score: " + totalOverallScore);
+				_log.info("");
+				if (totalStoneScore == 0)
+					_log.info("Dusk Prop: 0 - Dawn Prop: 0");
+				else
+					_log.info("Dusk Prop: " + ((duskStoneScore / totalStoneScore) * 500) + " - Dawn Prop: " + ((dawnStoneScore / totalStoneScore) * 500));
+				_log.info("Dusk %: " + duskPercent + " - Dawn %: " + dawnPercent);
 				
 				/* DUSK */
 				writeD(duskStoneScoreProp); // Seal Stone Score
@@ -211,9 +194,6 @@ public class SSQStatus extends L2GameServerPacket
 				{
 					int dawnProportion = SevenSigns.getInstance().getSealProportion(i, SevenSigns.CABAL_DAWN);
 					int duskProportion = SevenSigns.getInstance().getSealProportion(i, SevenSigns.CABAL_DUSK);
-					
-					if (Config.DEBUG)
-						_log.info(SevenSigns.getSealName(i, true) + " = Dawn Prop: " + dawnProportion + "(" + ((dawnProportion / totalDawnMembers) * 100) + "%)" + ", Dusk Prop: " + duskProportion + "(" + ((duskProportion / totalDuskMembers) * 100) + "%)");
 					
 					writeC(i);
 					writeC(SevenSigns.getInstance().getSealOwner(i));

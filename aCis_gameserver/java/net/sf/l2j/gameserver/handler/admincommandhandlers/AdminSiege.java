@@ -1,22 +1,7 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.handler.admincommandhandlers;
 
 import java.util.StringTokenizer;
 
-import net.sf.l2j.commons.lang.StringUtil;
 import net.sf.l2j.gameserver.datatables.ClanTable;
 import net.sf.l2j.gameserver.handler.IAdminCommandHandler;
 import net.sf.l2j.gameserver.instancemanager.AuctionManager;
@@ -206,87 +191,83 @@ public class AdminSiege implements IAdminCommandHandler
 	private static void showCastleSelectPage(L2PcInstance activeChar)
 	{
 		int i = 0;
-		
-		final NpcHtmlMessage html = new NpcHtmlMessage(0);
-		html.setFile("data/html/admin/castles.htm");
-		
-		final StringBuilder sb = new StringBuilder();
+		NpcHtmlMessage adminReply = new NpcHtmlMessage(0);
+		adminReply.setFile("data/html/admin/castles.htm");
+		StringBuilder cList = new StringBuilder();
 		for (Castle castle : CastleManager.getInstance().getCastles())
 		{
 			if (castle != null)
 			{
-				sb.append("<td fixwidth=90><a action=\"bypass -h admin_siege " + castle.getName() + "\">" + castle.getName() + "</a></td>");
+				String name = castle.getName();
+				cList.append("<td fixwidth=90><a action=\"bypass -h admin_siege " + name + "\">" + name + "</a></td>");
 				i++;
 			}
-			
 			if (i > 2)
 			{
-				sb.append("</tr><tr>");
+				cList.append("</tr><tr>");
 				i = 0;
 			}
 		}
-		html.replace("%castles%", sb.toString());
+		adminReply.replace("%castles%", cList.toString());
+		cList.setLength(0);
 		
-		// Cleanup sb.
-		sb.setLength(0);
 		i = 0;
-		
 		for (ClanHall clanhall : ClanHallManager.getInstance().getClanHalls().values())
 		{
 			if (clanhall != null)
 			{
-				StringUtil.append(sb, "<td fixwidth=134><a action=\"bypass -h admin_clanhall ", clanhall.getId(), "\">", clanhall.getName(), "</a></td>");
+				cList.append("<td fixwidth=134><a action=\"bypass -h admin_clanhall " + clanhall.getId() + "\">");
+				cList.append(clanhall.getName() + "</a></td>");
 				i++;
 			}
-			
 			if (i > 1)
 			{
-				sb.append("</tr><tr>");
+				cList.append("</tr><tr>");
 				i = 0;
 			}
 		}
-		html.replace("%clanhalls%", sb.toString());
+		adminReply.replace("%clanhalls%", cList.toString());
+		cList.setLength(0);
 		
-		// Cleanup sb.
-		sb.setLength(0);
 		i = 0;
-		
 		for (ClanHall clanhall : ClanHallManager.getInstance().getFreeClanHalls().values())
 		{
 			if (clanhall != null)
 			{
-				StringUtil.append(sb, "<td fixwidth=134><a action=\"bypass -h admin_clanhall ", clanhall.getId(), "\">", clanhall.getName(), "</a></td>");
+				cList.append("<td fixwidth=134><a action=\"bypass -h admin_clanhall " + clanhall.getId() + "\">");
+				cList.append(clanhall.getName() + "</a></td>");
 				i++;
 			}
-			
 			if (i > 1)
 			{
-				sb.append("</tr><tr>");
+				cList.append("</tr><tr>");
 				i = 0;
 			}
 		}
-		html.replace("%freeclanhalls%", sb.toString());
-		activeChar.sendPacket(html);
+		adminReply.replace("%freeclanhalls%", cList.toString());
+		activeChar.sendPacket(adminReply);
 	}
 	
 	private static void showSiegePage(L2PcInstance activeChar, String castleName)
 	{
-		final NpcHtmlMessage html = new NpcHtmlMessage(0);
-		html.setFile("data/html/admin/castle.htm");
-		html.replace("%castleName%", castleName);
-		activeChar.sendPacket(html);
+		NpcHtmlMessage adminReply = new NpcHtmlMessage(0);
+		adminReply.setFile("data/html/admin/castle.htm");
+		adminReply.replace("%castleName%", castleName);
+		activeChar.sendPacket(adminReply);
 	}
 	
 	private static void showClanHallPage(L2PcInstance activeChar, ClanHall clanhall)
 	{
-		final L2Clan owner = ClanTable.getInstance().getClan(clanhall.getOwnerId());
-		
-		final NpcHtmlMessage html = new NpcHtmlMessage(0);
-		html.setFile("data/html/admin/clanhall.htm");
-		html.replace("%clanhallName%", clanhall.getName());
-		html.replace("%clanhallId%", clanhall.getId());
-		html.replace("%clanhallOwner%", (owner == null) ? "None" : owner.getName());
-		activeChar.sendPacket(html);
+		NpcHtmlMessage adminReply = new NpcHtmlMessage(0);
+		adminReply.setFile("data/html/admin/clanhall.htm");
+		adminReply.replace("%clanhallName%", clanhall.getName());
+		adminReply.replace("%clanhallId%", clanhall.getId());
+		L2Clan owner = ClanTable.getInstance().getClan(clanhall.getOwnerId());
+		if (owner == null)
+			adminReply.replace("%clanhallOwner%", "None");
+		else
+			adminReply.replace("%clanhallOwner%", owner.getName());
+		activeChar.sendPacket(adminReply);
 	}
 	
 	@Override

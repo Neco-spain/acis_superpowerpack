@@ -1,20 +1,5 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.network.clientpackets;
 
-import net.sf.l2j.Config;
 import net.sf.l2j.gameserver.model.L2Macro;
 import net.sf.l2j.gameserver.model.L2Macro.L2MacroCmd;
 import net.sf.l2j.gameserver.model.actor.instance.L2PcInstance;
@@ -44,10 +29,6 @@ public final class RequestMakeMacro extends L2GameClientPacket
 			_count = MAX_MACRO_LENGTH;
 		
 		L2MacroCmd[] commands = new L2MacroCmd[_count];
-		
-		if (Config.DEBUG)
-			_log.info("Make macro id:" + _id + "\tname:" + _name + "\tdesc:" + _desc + "\tacronym:" + _acronym + "\ticon:" + _icon + "\tcount:" + _count);
-		
 		for (int i = 0; i < _count; i++)
 		{
 			int entry = readC();
@@ -58,9 +39,6 @@ public final class RequestMakeMacro extends L2GameClientPacket
 			
 			_commandsLenght += command.length();
 			commands[i] = new L2MacroCmd(entry, type, d1, d2, command);
-			
-			if (Config.DEBUG)
-				_log.info("entry:" + entry + "\ttype:" + type + "\td1:" + d1 + "\td2:" + d2 + "\tcommand:" + command);
 		}
 		_macro = new L2Macro(_id, _icon, _name, _desc, _acronym, commands);
 	}
@@ -70,6 +48,10 @@ public final class RequestMakeMacro extends L2GameClientPacket
 	{
 		final L2PcInstance player = getClient().getActiveChar();
 		if (player == null)
+			return;
+		
+		// Macro exploit fix
+		if (!getClient().getFloodProtectors().getMacro().tryPerformAction("make macro"))
 			return;
 		
 		if (_commandsLenght > 255)

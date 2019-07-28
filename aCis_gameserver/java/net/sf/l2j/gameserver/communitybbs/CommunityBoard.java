@@ -1,31 +1,35 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.communitybbs;
+
+import Extensions.CCB.Manager.AnnouncementsBBSManager;
+import Extensions.CCB.Manager.BuffBBSManager;
+import Extensions.CCB.Manager.ClanBBSManager;
+import Extensions.CCB.Manager.ClassBBSManager;
+import Extensions.CCB.Manager.DonationBBSManager;
+import Extensions.CCB.Manager.OlyStatsBBSManager;
+import Extensions.CCB.Manager.PartyMatchingBBSManager;
+import Extensions.CCB.Manager.PasswordBBSManager;
+import Extensions.CCB.Manager.ProblemReportBBSManager;
+import Extensions.CCB.Manager.RepairBBSManager;
+import Extensions.CCB.Manager.ShopBBSManager;
+import Extensions.CCB.Manager.TeleBBSManager;
+import classbalancer.ClassBalanceBBSManager;
+
+import java.util.StringTokenizer;
 
 import net.sf.l2j.Config;
 import net.sf.l2j.gameserver.communitybbs.Manager.BaseBBSManager;
-import net.sf.l2j.gameserver.communitybbs.Manager.ClanBBSManager;
 import net.sf.l2j.gameserver.communitybbs.Manager.FriendsBBSManager;
 import net.sf.l2j.gameserver.communitybbs.Manager.MailBBSManager;
 import net.sf.l2j.gameserver.communitybbs.Manager.PostBBSManager;
 import net.sf.l2j.gameserver.communitybbs.Manager.RegionBBSManager;
 import net.sf.l2j.gameserver.communitybbs.Manager.TopBBSManager;
 import net.sf.l2j.gameserver.communitybbs.Manager.TopicBBSManager;
+import net.sf.l2j.gameserver.datatables.MultisellData;
 import net.sf.l2j.gameserver.model.actor.instance.L2PcInstance;
 import net.sf.l2j.gameserver.network.L2GameClient;
 import net.sf.l2j.gameserver.network.SystemMessageId;
+
+import skillsbalancer.SkillsBalanceBBSManager;
 
 public class CommunityBoard
 {
@@ -43,6 +47,18 @@ public class CommunityBoard
 		final L2PcInstance activeChar = client.getActiveChar();
 		if (activeChar == null)
 			return;
+
+		if (command.startsWith("_bbsskillsbalancer") && activeChar.isGM())
+		{
+			SkillsBalanceBBSManager.getInstance().parseCmd(command, activeChar);
+			return;
+		}
+
+		if (command.startsWith("_bbsbalancer") && activeChar.isGM())
+		{
+			ClassBalanceBBSManager.getInstance().parseCmd(command, activeChar);
+			return;
+		}
 		
 		if (!Config.ENABLE_COMMUNITY_BOARD)
 		{
@@ -54,6 +70,14 @@ public class CommunityBoard
 			TopBBSManager.getInstance().parseCmd(command, activeChar);
 		else if (command.startsWith("_bbsloc"))
 			RegionBBSManager.getInstance().parseCmd(command, activeChar);
+		else if (command.startsWith("_bbsannouncements"))
+			AnnouncementsBBSManager.getInstance().parseCmd(command, activeChar);
+		else if (command.startsWith("_bbsProblemReport"))
+			ProblemReportBBSManager.getInstance().parseCmd(command, activeChar);
+		else if (command.startsWith("_bbsdonation"))
+			DonationBBSManager.getInstance().parseCmd(command, activeChar);
+		else if ((command.startsWith("_bbsOlyStats")) || (command.startsWith("_bbsClassList")))
+			OlyStatsBBSManager.getInstance().parseCmd(command, activeChar);
 		else if (command.startsWith("_bbsclan"))
 			ClanBBSManager.getInstance().parseCmd(command, activeChar);
 		else if (command.startsWith("_bbsmemo"))
@@ -66,6 +90,64 @@ public class CommunityBoard
 			TopicBBSManager.getInstance().parseCmd(command, activeChar);
 		else if (command.startsWith("_bbsposts"))
 			PostBBSManager.getInstance().parseCmd(command, activeChar);
+		else if (command.startsWith("_bbstele"))
+			TeleBBSManager.getInstance().parseCmd(command, activeChar);
+		else if (command.startsWith("_bbsbuff"))
+			BuffBBSManager.getInstance().parseCmd(command, activeChar);
+		else if (command.startsWith("_bbsrepair"))
+			RepairBBSManager.getInstance().parseCmd(command, activeChar);
+		else if (command.startsWith("_bbstop"))
+			TopBBSManager.getInstance().parseCmd(command, activeChar);
+		else if (command.startsWith("_bbshop"))
+		{
+			ShopBBSManager.getInstance().parsecmd(command, activeChar);
+		}
+		else if ((command.equals("_bbsPassPanel")) || (command.startsWith("_bbsChangePass")))
+			PasswordBBSManager.getInstance().parseCmd(command, activeChar);
+		else if (command.startsWith("_bbsmultisell;"))
+		{
+			StringTokenizer st = new StringTokenizer(command, ";");
+			st.nextToken();
+			ShopBBSManager.getInstance().parsecmd("_bbsshop;" + st.nextToken(), activeChar);
+			MultisellData.getInstance().separateAndSend(Integer.parseInt(st.nextToken()), activeChar, false, 0);
+		}
+		else if (command.startsWith("_bbsclass"))
+			ClassBBSManager.getInstance().parsecmd(command, activeChar);
+		else if (command.startsWith("_bbspartymatching"))
+		{
+			String[] value = command.split(" ");
+			String type = value[1];
+			if (type.equals("on"))
+				if (activeChar.isInParty())
+					activeChar.sendMessage("You cant use this while you're in party!");
+				else if (activeChar.isInPartyMatching())
+				{
+					activeChar.sendMessage("You're alredy in the Party Matching list!");
+					PartyMatchingBBSManager.refresh(activeChar);
+				}
+				else
+				{
+					activeChar.setPartyMatchingStatus(1);
+					activeChar.setInPartyMatching(true);
+					activeChar.sendMessage("You are now on the Party Matching list.");
+				}
+			else if (type.equals("off"))
+				if (activeChar.isInParty())
+					activeChar.sendMessage("You cant use this while you're in party!");
+				else if (!activeChar.isInPartyMatching())
+				{
+					PartyMatchingBBSManager.refresh(activeChar);
+					activeChar.sendMessage("You've alredy left from the Party Matching list!");
+				}
+				else
+				{
+					activeChar.setPartyMatchingStatus(0);
+					activeChar.setInPartyMatching(false);
+					activeChar.sendMessage("You've left the party matching list.");
+				}
+		}
+		else if (command.startsWith("pmatch"))
+			PartyMatchingBBSManager.getInstance().parseCmd(command, activeChar);
 		else
 			BaseBBSManager.separateAndSend("<html><body><br><br><center>The command: " + command + " isn't implemented.</center></body></html>", activeChar);
 	}

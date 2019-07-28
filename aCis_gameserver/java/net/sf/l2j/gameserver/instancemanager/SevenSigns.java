@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.instancemanager;
 
 import java.sql.Connection;
@@ -1054,18 +1040,17 @@ public class SevenSigns
 	 */
 	protected void initializeSeals()
 	{
-		for (Map.Entry<Integer, Integer> sealEntry : _signsSealOwners.entrySet())
+		for (Integer currSeal : _signsSealOwners.keySet())
 		{
-			final int currentSeal = sealEntry.getKey();
-			final int sealOwner = sealEntry.getValue();
+			int sealOwner = _signsSealOwners.get(currSeal);
 			
 			if (sealOwner != CABAL_NULL)
 				if (isSealValidationPeriod())
-					_log.info("SevenSigns: The " + getCabalName(sealOwner) + " have won the " + getSealName(currentSeal, false) + ".");
+					_log.info("SevenSigns: The " + getCabalName(sealOwner) + " have won the " + getSealName(currSeal, false) + ".");
 				else
-					_log.info("SevenSigns: The " + getSealName(currentSeal, false) + " is currently owned by " + getCabalName(sealOwner) + ".");
+					_log.info("SevenSigns: The " + getSealName(currSeal, false) + " is currently owned by " + getCabalName(sealOwner) + ".");
 			else
-				_log.info("SevenSigns: The " + getSealName(currentSeal, false) + " remains unclaimed.");
+				_log.info("SevenSigns: The " + getSealName(currSeal, false) + " remains unclaimed.");
 		}
 	}
 	

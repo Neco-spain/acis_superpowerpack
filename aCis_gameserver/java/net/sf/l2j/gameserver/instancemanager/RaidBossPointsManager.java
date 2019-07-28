@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.instancemanager;
 
 import java.sql.Connection;
@@ -38,7 +24,7 @@ public class RaidBossPointsManager
 {
 	private final static Logger _log = Logger.getLogger(RaidBossPointsManager.class.getName());
 	
-	private final Map<Integer, Map<Integer, Integer>> _list = new ConcurrentHashMap<>();
+	private static Map<Integer, Map<Integer, Integer>> _list = new ConcurrentHashMap<>();
 	
 	private final Comparator<Map.Entry<Integer, Integer>> _comparator = new Comparator<Map.Entry<Integer, Integer>>()
 	{
@@ -99,7 +85,7 @@ public class RaidBossPointsManager
 		}
 	}
 	
-	public final void addPoints(L2PcInstance player, int bossId, int points)
+	public final static void addPoints(L2PcInstance player, int bossId, int points)
 	{
 		int ownerId = player.getObjectId();
 		Map<Integer, Integer> tmpPoint = _list.get(ownerId);
@@ -119,7 +105,7 @@ public class RaidBossPointsManager
 		_list.put(ownerId, tmpPoint);
 	}
 	
-	public final int getPointsByOwnerId(int ownerId)
+	public final static int getPointsByOwnerId(int ownerId)
 	{
 		Map<Integer, Integer> tmpPoint = _list.get(ownerId);
 		if (tmpPoint == null || tmpPoint.isEmpty())
@@ -132,12 +118,12 @@ public class RaidBossPointsManager
 		return totalPoints;
 	}
 	
-	public final Map<Integer, Integer> getList(L2PcInstance player)
+	public final static Map<Integer, Integer> getList(L2PcInstance player)
 	{
 		return _list.get(player.getObjectId());
 	}
 	
-	public final void cleanUp()
+	public final static void cleanUp()
 	{
 		try (Connection con = L2DatabaseFactory.getInstance().getConnection())
 		{

@@ -1,22 +1,11 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.skills;
+
+import classbalancer.ClassBalanceManager;
 
 import java.util.logging.Logger;
 
 import net.sf.l2j.Config;
+import net.sf.l2j.gameserver.GameTimeController;
 import net.sf.l2j.gameserver.instancemanager.ClanHallManager;
 import net.sf.l2j.gameserver.instancemanager.SevenSigns;
 import net.sf.l2j.gameserver.instancemanager.SevenSignsFestival;
@@ -27,6 +16,7 @@ import net.sf.l2j.gameserver.model.L2Skill;
 import net.sf.l2j.gameserver.model.actor.L2Character;
 import net.sf.l2j.gameserver.model.actor.L2Npc;
 import net.sf.l2j.gameserver.model.actor.L2Playable;
+import net.sf.l2j.gameserver.model.actor.L2Summon;
 import net.sf.l2j.gameserver.model.actor.instance.L2CubicInstance;
 import net.sf.l2j.gameserver.model.actor.instance.L2DoorInstance;
 import net.sf.l2j.gameserver.model.actor.instance.L2PcInstance;
@@ -41,10 +31,11 @@ import net.sf.l2j.gameserver.model.zone.type.L2MotherTreeZone;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
 import net.sf.l2j.gameserver.skills.effects.EffectTemplate;
-import net.sf.l2j.gameserver.taskmanager.GameTimeTaskManager;
 import net.sf.l2j.gameserver.templates.skills.L2SkillType;
 import net.sf.l2j.gameserver.util.Util;
 import net.sf.l2j.util.Rnd;
+
+import skillsbalancer.SkillsBalanceManager;
 
 /**
  * Global calculations, can be modified by server admins
@@ -66,6 +57,13 @@ public final class Formulas
 	private static final byte MELEE_ATTACK_RANGE = 40;
 	
 	public static final int MAX_STAT_VALUE = 100;
+	
+	public static final int BASENPCSTR = 40;
+	public static final int BASENPCCON = 43;
+	public static final int BASENPCDEX = 30;
+	public static final int BASENPCINT = 21;
+	public static final int BASENPCWIT = 20;
+	public static final int BASENPCMEN = 20;
 	
 	private static final double[] STRCompute = new double[]
 	{
@@ -395,9 +393,6 @@ public final class Formulas
 		// Check the distance between the player and the player spawn point, in the center of the arena.
 		double distToCenter = activeChar.getPlanDistanceSq(festivalCenter[0], festivalCenter[1]);
 		
-		if (Config.DEVELOPER)
-			_log.info("Distance: " + distToCenter + ", RegenMulti: " + (distToCenter * 2.5) / 50);
-		
 		return 1.0 - (distToCenter * 0.0005); // Maximum Decreased Regen of ~ -65%;
 	}
 	
@@ -475,6 +470,44 @@ public final class Formulas
 		// Dmg bonusses in PvP fight
 		if (isPvP)
 			damage *= attacker.calcStat(Stats.PVP_PHYS_SKILL_DMG, 1, null, null);
+
+		int skillId = skill.getId();
+		double svsAll[] = SkillsBalanceManager.getInstance().getBalance((skillId * -1) - 65536, false);
+		if ((svsAll != null) && (Config.SKILLS_BALANCER_AFFECTS_MONSTERS || (target instanceof L2Playable)))
+		{
+			damage *= svsAll[1];
+		}
+		if ((target instanceof L2PcInstance) || (target instanceof L2Summon))
+		{
+			L2PcInstance t = target instanceof L2PcInstance ? target.getActingPlayer() : ((L2Summon) target).getOwner();
+			int targetClassId = SkillsBalanceManager.getInstance().getClassId(t.getClassId().getId());
+			double vsTarget[] = SkillsBalanceManager.getInstance().getBalance(skillId + (targetClassId * 65536), t.isInOlympiadMode());
+			if (vsTarget != null)
+			{
+				damage *= vsTarget[1];
+			}
+		}
+ 		
+		if ((attacker instanceof L2PcInstance) || (attacker instanceof L2Summon))
+		{
+			L2PcInstance player = attacker instanceof L2PcInstance ? attacker.getActingPlayer() : ((L2Summon) attacker).getOwner();
+			int playerClassId = ClassBalanceManager.getInstance().getClassId(player.getClassId().getId());
+			double vsAll[] = ClassBalanceManager.getInstance().getBalance(playerClassId * -256, player.isInOlympiadMode());
+			if ((vsAll != null) && (Config.CLASS_BALANCER_AFFECTS_MONSTERS || (target instanceof L2Playable)))
+			{
+				damage *= vsAll[4];
+			}
+			if ((target instanceof L2PcInstance) || (target instanceof L2Summon))
+			{
+				L2PcInstance t = target instanceof L2PcInstance ? target.getActingPlayer() : ((L2Summon) target).getOwner();
+				int targetClassId = ClassBalanceManager.getInstance().getClassId(t.getClassId().getId());
+				double vsTarget[] = ClassBalanceManager.getInstance().getBalance((playerClassId * 256) + targetClassId, player.isInOlympiadMode());
+				if (vsTarget != null)
+				{
+					damage *= vsTarget[4];
+				}
+			}
+		}
 		
 		return damage < 1 ? 1. : damage;
 	}
@@ -656,7 +689,76 @@ public final class Formulas
 		
 		// Weapon elemental damages
 		damage += calcElemental(attacker, target, null);
-		
+
+		if (skill != null) {
+			int skillId = skill.getId();
+			double svsAll[] = SkillsBalanceManager.getInstance().getBalance((skillId * -1) - 65536, false);
+			if ((svsAll != null) && (Config.SKILLS_BALANCER_AFFECTS_MONSTERS || (target instanceof L2Playable)))
+			{
+				damage *= svsAll[1];
+			}
+			if ((target instanceof L2PcInstance) || (target instanceof L2Summon))
+			{
+				L2PcInstance t = target instanceof L2PcInstance ? target.getActingPlayer() : ((L2Summon) target).getOwner();
+				int targetClassId = SkillsBalanceManager.getInstance().getClassId(t.getClassId().getId());
+				double vsTarget[] = SkillsBalanceManager.getInstance().getBalance(skillId + (targetClassId * 65536), t.isInOlympiadMode());
+				if (vsTarget != null)
+				{
+					damage *= vsTarget[1];
+				}
+			}
+		}
+ 		
+		if ((attacker instanceof L2PcInstance) || (attacker instanceof L2Summon))
+		{
+			L2PcInstance player = attacker instanceof L2PcInstance ? attacker.getActingPlayer() : ((L2Summon) attacker).getOwner();
+			int playerClassId = ClassBalanceManager.getInstance().getClassId(player.getClassId().getId());
+			double vsAll[] = ClassBalanceManager.getInstance().getBalance(playerClassId * -256, player.isInOlympiadMode());
+			if ((vsAll != null) && (Config.CLASS_BALANCER_AFFECTS_MONSTERS || (target instanceof L2Playable)))
+			{
+				if ((skill != null) && crit)
+				{
+					damage *= vsAll[6];
+				}
+				else if ((skill != null) && !crit)
+				{
+					damage *= vsAll[5];
+				}
+				else if ((skill == null) && crit)
+				{
+					damage *= vsAll[1];
+				}
+				else if ((skill == null) && !crit)
+				{
+					damage *= vsAll[0];
+				}
+			}
+			if ((target instanceof L2PcInstance) || (target instanceof L2Summon))
+			{
+				L2PcInstance t = target instanceof L2PcInstance ? target.getActingPlayer() : ((L2Summon) target).getOwner();
+				int targetClassId = ClassBalanceManager.getInstance().getClassId(t.getClassId().getId());
+				double vsTarget[] = ClassBalanceManager.getInstance().getBalance((playerClassId * 256) + targetClassId, player.isInOlympiadMode());
+				if (vsTarget != null)
+				{
+					if ((skill != null) && crit)
+					{
+						damage *= vsTarget[6];
+					}
+					else if ((skill != null) && !crit)
+					{
+						damage *= vsTarget[5];
+					}
+					else if ((skill == null) && crit)
+					{
+						damage *= vsTarget[1];
+					}
+					else if ((skill == null) && !crit)
+					{
+						damage *= vsTarget[0];
+					}
+				}
+			}
+		}
 		return damage;
 	}
 	
@@ -731,7 +833,44 @@ public final class Formulas
 		}
 		
 		damage *= calcElemental(attacker, target, skill);
-		
+
+		int skillId = skill.getId();
+		double svsAll[] = SkillsBalanceManager.getInstance().getBalance((skillId * -1) - 65536, false);
+		if ((svsAll != null) && (Config.SKILLS_BALANCER_AFFECTS_MONSTERS || (target instanceof L2Playable)))
+		{
+			damage *= svsAll[1];
+		}
+		if ((target instanceof L2PcInstance) || (target instanceof L2Summon))
+		{
+			L2PcInstance t = target instanceof L2PcInstance ? target.getActingPlayer() : ((L2Summon) target).getOwner();
+			int targetClassId = SkillsBalanceManager.getInstance().getClassId(t.getClassId().getId());
+			double vsTarget[] = SkillsBalanceManager.getInstance().getBalance(skillId + (targetClassId * 65536), t.isInOlympiadMode());
+			if (vsTarget != null)
+			{
+				damage *= vsTarget[1];
+			}
+		}
+ 		
+		if ((attacker instanceof L2PcInstance) || (attacker instanceof L2Summon))
+		{
+			L2PcInstance player = attacker instanceof L2PcInstance ? attacker.getActingPlayer() : ((L2Summon) attacker).getOwner();
+			int playerClassId = ClassBalanceManager.getInstance().getClassId(player.getClassId().getId());
+			double vsAll[] = ClassBalanceManager.getInstance().getBalance(playerClassId * -256, player.isInOlympiadMode());
+			if ((vsAll != null) && (Config.CLASS_BALANCER_AFFECTS_MONSTERS || (target instanceof L2Playable)))
+			{
+				damage *= mcrit ? vsAll[3] : vsAll[2];
+			}
+			if ((target instanceof L2PcInstance) || (target instanceof L2Summon))
+			{
+				L2PcInstance t = target instanceof L2PcInstance ? target.getActingPlayer() : ((L2Summon) target).getOwner();
+				int targetClassId = ClassBalanceManager.getInstance().getClassId(t.getClassId().getId());
+				double vsTarget[] = ClassBalanceManager.getInstance().getBalance((playerClassId * 256) + targetClassId, player.isInOlympiadMode());
+				if (vsTarget != null)
+				{
+					damage *= mcrit ? vsTarget[3] : vsTarget[2];
+				}
+			}
+		}
 		return damage;
 	}
 	
@@ -833,9 +972,6 @@ public final class Formulas
 		
 		chance = 10 * activeChar.calcStat(Stats.LETHAL_RATE, chance, target, null);
 		
-		if (Config.DEVELOPER)
-			_log.info("Current calcLethal: " + chance + " / 1000");
-		
 		return chance;
 	}
 	
@@ -900,9 +1036,6 @@ public final class Formulas
 	
 	public static final boolean calcMCrit(int mRate)
 	{
-		if (Config.DEVELOPER)
-			_log.info("Current mCritRate: " + mRate + "/1000");
-		
 		return mRate > Rnd.get(1000);
 	}
 	
@@ -936,9 +1069,6 @@ public final class Formulas
 			rate = 99;
 		else if (rate < 1)
 			rate = 1;
-		
-		if (Config.DEVELOPER)
-			_log.info("calcCastBreak rate: " + (int) rate + "%");
 		
 		if (Rnd.get(100) < rate)
 			target.breakCast();
@@ -993,7 +1123,7 @@ public final class Formulas
 			modifier -= 3;
 		
 		// Get weather bonus. TODO: rain support (-3%).
-		if (GameTimeTaskManager.getInstance().isNight())
+		if (GameTimeController.getInstance().isNight())
 			modifier -= 10;
 		
 		// Get position bonus.
@@ -1003,9 +1133,6 @@ public final class Formulas
 			modifier += 5;
 		
 		chance *= modifier / 100;
-		
-		if (Config.DEVELOPER)
-			_log.info("calcHitMiss rate: " + chance / 10 + "%, modifier : x" + modifier / 100);
 		
 		return Math.max(Math.min(chance, 980), 200) < Rnd.get(1000);
 	}
@@ -1220,11 +1347,24 @@ public final class Formulas
 		final double skillModifier = calcSkillVulnerability(attacker, target, skill, type);
 		final double mAtkModifier = getMatkModifier(attacker, target, skill, bss);
 		final double lvlModifier = getLevelModifier(attacker, target, skill);
-		final double rate = Math.max(1, Math.min((baseChance * statModifier * skillModifier * mAtkModifier * lvlModifier), 99));
-		
-		if (Config.DEVELOPER)
-			_log.info("calcEffectSuccess(): Name:" + skill.getName() + " eff.type:" + type.toString() + " power:" + baseChance + " statMod:" + String.format("%1.2f", statModifier) + " skillMod:" + String.format("%1.2f", skillModifier) + " mAtkMod:" + String.format("%1.2f", mAtkModifier) + " lvlMod:" + String.format("%1.2f", lvlModifier) + " total:" + String.format("%1.2f", rate) + "%");
-		
+		double rate = Math.max(1, Math.min((baseChance * statModifier * skillModifier * mAtkModifier * lvlModifier), 99));
+
+		int skillId = skill.getId();
+		double svsAll[] = SkillsBalanceManager.getInstance().getBalance((skillId * -1) - 65536, false);
+		if ((svsAll != null) && (Config.SKILLS_BALANCER_AFFECTS_MONSTERS || (target instanceof L2Playable)))
+		{
+			rate *= svsAll[0];
+		}
+		if ((target instanceof L2PcInstance) || (target instanceof L2Summon))
+		{
+			L2PcInstance t = target instanceof L2PcInstance ? target.getActingPlayer() : ((L2Summon) target).getOwner();
+			int targetClassId = SkillsBalanceManager.getInstance().getClassId(t.getClassId().getId());
+			double vsTarget[] = SkillsBalanceManager.getInstance().getBalance(skillId + (targetClassId * 65536), t.isInOlympiadMode());
+			if (vsTarget != null)
+			{
+				rate *= vsTarget[0];
+			}
+		}
 		return (Rnd.get(100) < rate);
 	}
 	
@@ -1247,9 +1387,6 @@ public final class Formulas
 		final double mAtkModifier = getMatkModifier(attacker, target, skill, bss);
 		final double lvlModifier = getLevelModifier(attacker, target, skill);
 		final double rate = Math.max(1, Math.min((baseChance * statModifier * skillModifier * mAtkModifier * lvlModifier), 99));
-		
-		if (Config.DEVELOPER)
-			_log.info("calcSkillSuccess(): Name:" + skill.getName() + " type:" + skill.getSkillType().toString() + " power:" + baseChance + " statMod:" + String.format("%1.2f", statModifier) + " skillMod:" + String.format("%1.2f", skillModifier) + " mAtkMod:" + String.format("%1.2f", mAtkModifier) + " lvlMod:" + String.format("%1.2f", lvlModifier) + " total:" + String.format("%1.2f", rate) + "%");
 		
 		return (Rnd.get(100) < rate);
 	}
@@ -1291,9 +1428,6 @@ public final class Formulas
 		final double lvlModifier = getLevelModifier(attacker.getOwner(), target, skill);
 		final double rate = Math.max(1, Math.min((baseChance * statModifier * skillModifier * mAtkModifier * lvlModifier), 99));
 		
-		if (Config.DEVELOPER)
-			_log.info("calcCubicSkillSuccess(): Name:" + skill.getName() + " type:" + skill.getSkillType().toString() + " power:" + String.valueOf(baseChance) + " statMod:" + String.format("%1.2f", statModifier) + " skillMod:" + String.format("%1.2f", skillModifier) + " mAtkMod:" + String.format("%1.2f", mAtkModifier) + " lvlMod:" + String.format("%1.2f", lvlModifier) + " total:" + String.format("%1.2f", rate) + "%");
-		
 		return (Rnd.get(100) < rate);
 	}
 	
@@ -1307,9 +1441,6 @@ public final class Formulas
 		
 		if (attacker instanceof L2PcInstance && ((L2PcInstance) attacker).getExpertiseWeaponPenalty())
 			rate += 6000;
-		
-		if (Config.DEVELOPER)
-			_log.info("calcMagicSuccess(): Name:" + skill.getName() + " lvlDiff:" + lvlDifference + " fail:" + String.format("%1.2f", rate / 100) + "%");
 		
 		rate = Math.min(rate, 9900);
 		

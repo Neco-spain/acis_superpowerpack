@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.instancemanager;
 
 import java.sql.Connection;
@@ -279,7 +265,7 @@ public class FishingChampionshipManager
 					{
 						pl.addItem("fishing_reward", Config.ALT_FISH_CHAMPIONSHIP_REWARD_ITEM, rewardCnt, null, true);
 						
-						final NpcHtmlMessage html = new NpcHtmlMessage(0);
+						NpcHtmlMessage html = new NpcHtmlMessage(0);
 						html.setFile("data/html/fisherman/championship/fish_event_reward001.htm");
 						pl.sendPacket(html);
 					}
@@ -290,7 +276,7 @@ public class FishingChampionshipManager
 	
 	public void showMidResult(L2PcInstance pl)
 	{
-		final NpcHtmlMessage html = new NpcHtmlMessage(0);
+		NpcHtmlMessage html = new NpcHtmlMessage(0);
 		
 		if (_needRefresh)
 		{
@@ -323,7 +309,7 @@ public class FishingChampionshipManager
 	
 	public void showChampScreen(L2PcInstance pl, int objectId)
 	{
-		final NpcHtmlMessage html = new NpcHtmlMessage(objectId);
+		NpcHtmlMessage html = new NpcHtmlMessage(objectId);
 		html.setFile("data/html/fisherman/championship/fish_event001.htm");
 		
 		String str = null;

@@ -1,24 +1,10 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.network.clientpackets;
 
 import net.sf.l2j.Config;
 import net.sf.l2j.gameserver.datatables.SkillTable;
 import net.sf.l2j.gameserver.datatables.SkillTreeTable;
-import net.sf.l2j.gameserver.datatables.SpellbookTable;
 import net.sf.l2j.gameserver.model.L2PledgeSkillLearn;
+import net.sf.l2j.gameserver.model.L2RebirthSkillLearn;
 import net.sf.l2j.gameserver.model.L2ShortCut;
 import net.sf.l2j.gameserver.model.L2Skill;
 import net.sf.l2j.gameserver.model.L2SkillLearn;
@@ -80,7 +66,7 @@ public class RequestAcquireSkill extends L2GameClientPacket
 		// Types.
 		switch (_skillType)
 		{
-			case 0: // General skills.
+			case 0: // Trance's Rebirth skills.
 				// Player already has such skill with same or higher level.
 				int skillLvl = activeChar.getSkillLevel(_skillId);
 				if (skillLvl >= _skillLevel)
@@ -90,16 +76,17 @@ public class RequestAcquireSkill extends L2GameClientPacket
 				if (Math.max(skillLvl, 0) + 1 != _skillLevel)
 					return;
 				
-				int spCost = 0;
+				int spCost = 0, idItem = 0;
 				
 				// Find skill information.
-				for (L2SkillLearn sl : SkillTreeTable.getInstance().getAvailableSkills(activeChar, activeChar.getSkillLearningClassId()))
+				for (L2RebirthSkillLearn rsl : SkillTreeTable.getInstance().getAvailableRebirthSkills(activeChar, activeChar.getSkillLearningClassId()))
 				{
 					// Skill found.
-					if (sl.getId() == _skillId && sl.getLevel() == _skillLevel)
+					if (rsl.getId() == _skillId && rsl.getLevel() == _skillLevel)
 					{
 						exists = true;
-						spCost = sl.getSpCost();
+						idItem = rsl.getItemId();
+						spCost = rsl.getCostSp();
 						break;
 					}
 				}
@@ -116,11 +103,10 @@ public class RequestAcquireSkill extends L2GameClientPacket
 					return;
 				}
 				
-				// Get spellbook and try to consume it.
-				int spbId = SpellbookTable.getInstance().getBookForSkill(_skillId, _skillLevel);
-				if (spbId > 0)
+				// Get item and try to consume it.
+				if (idItem > 0)
 				{
-					if (!activeChar.destroyItemByItemId("SkillLearn", spbId, 1, trainer, true))
+					if (!activeChar.destroyItemByItemId("SkillLearn", idItem, 1, trainer, false))
 					{
 						activeChar.sendPacket(SystemMessageId.ITEM_MISSING_TO_LEARN_SKILL);
 						L2NpcInstance.showSkillList(activeChar, trainer, activeChar.getSkillLearningClassId());

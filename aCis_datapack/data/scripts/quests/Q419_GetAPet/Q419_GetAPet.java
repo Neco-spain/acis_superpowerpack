@@ -1,21 +1,9 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package quests.Q419_GetAPet;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import net.sf.l2j.gameserver.model.actor.L2Npc;
@@ -276,7 +264,20 @@ public class Q419_GetAPet extends Quest
 		return null;
 	}
 	
-	private static String checkQuestions(QuestState st)
+	private String join(List<String> list)
+	{
+		StringBuilder sb = new StringBuilder();
+		String loopDelim = "";
+		for (String s : list)
+		{
+			sb.append(loopDelim);
+			sb.append(s);
+			loopDelim = " ";
+		}
+		return sb.toString();
+	}
+	
+	private String checkQuestions(QuestState st)
 	{
 		final int answers = st.getInt("correct") + (st.getInt("wrong"));
 		if (answers < 10)
@@ -288,8 +289,10 @@ public class Q419_GetAPet extends Quest
 			if (questions.length > 10 - answers)
 			{
 				questions[index] = questions[questions.length - 1];
-				
-				st.set("quiz", String.join(" ", Arrays.copyOf(questions, questions.length - 1)));
+				List<String> list = new ArrayList<>(Arrays.asList(questions));
+				list.remove(questions.length - 1);
+				questions = list.toArray(questions);
+				st.set("quiz", join(list));
 			}
 			return "30731-" + question + ".htm";
 		}

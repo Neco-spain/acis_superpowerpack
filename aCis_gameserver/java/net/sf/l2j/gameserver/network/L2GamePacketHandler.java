@@ -1,31 +1,20 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.network;
+
+import Extensions.Events.Phoenix.EventManager;
 
 import java.nio.ByteBuffer;
 import java.util.logging.Logger;
 
 import net.sf.l2j.Config;
-import net.sf.l2j.commons.mmocore.IClientFactory;
-import net.sf.l2j.commons.mmocore.IMMOExecutor;
-import net.sf.l2j.commons.mmocore.IPacketHandler;
-import net.sf.l2j.commons.mmocore.MMOConnection;
-import net.sf.l2j.commons.mmocore.ReceivablePacket;
 import net.sf.l2j.gameserver.network.L2GameClient.GameClientState;
 import net.sf.l2j.gameserver.network.clientpackets.*;
 import net.sf.l2j.util.Util;
+
+import org.mmocore.network.IClientFactory;
+import org.mmocore.network.IMMOExecutor;
+import org.mmocore.network.IPacketHandler;
+import org.mmocore.network.MMOConnection;
+import org.mmocore.network.ReceivablePacket;
 
 /**
  * The Stateful approach prevents the server from handling inconsistent packets.<BR>
@@ -94,6 +83,9 @@ public final class L2GamePacketHandler implements IPacketHandler<L2GameClient>, 
 				}
 				break;
 			case IN_GAME:
+				if (EventManager.getInstance().isRunning() && EventManager.getInstance().getInt("antiAfkTime") > 0 && EventManager.getInstance().isRegistered(client.getActiveChar()))
+					client.getActiveChar().setAntiAfk(EventManager.getInstance().getInt("antiAfkTime"));
+				
 				switch (opcode)
 				{
 					case 0x01:

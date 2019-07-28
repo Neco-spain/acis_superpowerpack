@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.datatables;
 
 import java.io.File;
@@ -26,6 +12,7 @@ import java.util.logging.Logger;
 import net.sf.l2j.gameserver.model.L2EnchantSkillData;
 import net.sf.l2j.gameserver.model.L2EnchantSkillLearn;
 import net.sf.l2j.gameserver.model.L2PledgeSkillLearn;
+import net.sf.l2j.gameserver.model.L2RebirthSkillLearn;
 import net.sf.l2j.gameserver.model.L2Skill;
 import net.sf.l2j.gameserver.model.L2SkillLearn;
 import net.sf.l2j.gameserver.model.actor.instance.L2PcInstance;
@@ -46,6 +33,7 @@ public class SkillTreeTable
 	private List<L2PledgeSkillLearn> _pledgeSkillTrees;
 	private Map<Integer, L2EnchantSkillData> _enchantSkillData;
 	private List<L2EnchantSkillLearn> _enchantSkillTrees;
+	private List<L2RebirthSkillLearn> _rebirthSkillTrees;
 	
 	public static SkillTreeTable getInstance()
 	{
@@ -207,10 +195,43 @@ public class SkillTreeTable
 			_log.severe("PledgeTable: Error while loading pledge skills: " + e);
 		}
 		
+		// Rebirth skills tree
+		try
+		{
+			_rebirthSkillTrees = new ArrayList<>();
+			
+			File f = new File("./data/xml/skillstrees/rebirth_skills_tree.xml");
+			Document doc = XMLDocumentFactory.getInstance().loadDocument(f);
+			
+			for (Node list = doc.getFirstChild().getFirstChild(); list != null; list = list.getNextSibling())
+			{
+				if ("skill".equalsIgnoreCase(list.getNodeName()))
+				{
+					NamedNodeMap skillAttr = list.getAttributes();
+					
+					int skillId = Integer.parseInt(skillAttr.getNamedItem("id").getNodeValue());
+					int skillLvl = Integer.parseInt(skillAttr.getNamedItem("lvl").getNodeValue());
+					int costSp = Integer.valueOf(skillAttr.getNamedItem("sp").getNodeValue());
+					int itemId = 0;
+					
+					Node att = skillAttr.getNamedItem("itemId");
+					if (att != null)
+						itemId = Integer.valueOf(att.getNodeValue());
+					
+					_rebirthSkillTrees.add(new L2RebirthSkillLearn(skillId, skillLvl, costSp, itemId));
+				}
+			}
+		}
+		catch (Exception e)
+		{
+			_log.severe("RebirthTable: Error while loading rebirth skills: " + e);
+		}
+		
 		_log.config("FishingSkillTreeTable: Loaded " + _fishingSkillTrees.size() + " general skills.");
 		_log.config("DwarvenCraftSkillTreeTable: Loaded " + _expandDwarvenCraftSkillTrees.size() + " dwarven skills.");
 		_log.config("EnchantSkillTreeTable: Loaded " + _enchantSkillData.size() + " enchant types and " + _enchantSkillTrees.size() + " enchant skills.");
 		_log.config("PledgeSkillTreeTable: Loaded " + _pledgeSkillTrees.size() + " pledge skills.");
+		_log.config("RebirthSkillTreeTable: Loaded " + _rebirthSkillTrees.size() + " rebirth skills.");
 	}
 	
 	/**
@@ -505,6 +526,39 @@ public class SkillTreeTable
 				if (!found && psl.getLevel() == 1)
 					result.add(psl);
 			}
+		}
+		return result;
+	}
+	
+	/**
+	 * @param cha L2PcInstance, player whom skills are compared.
+	 * @param classId 
+	 * @return list of available rebirth skills for L2PcInstance.
+	 */
+	public List<L2RebirthSkillLearn> getAvailableRebirthSkills(L2PcInstance cha, ClassId classId)
+	{
+		List<L2RebirthSkillLearn> result = new ArrayList<>();
+		
+		L2Skill[] chaSkills = cha.getAllSkills();
+		
+		for (L2RebirthSkillLearn rsl : _rebirthSkillTrees)
+		{
+			boolean found = false;
+			
+			for (L2Skill s : chaSkills)
+			{
+				if (s.getId() == rsl.getId())
+				{
+					if (s.getLevel() == rsl.getLevel() - 1)
+						result.add(rsl);
+					
+					found = true;
+					break;
+				}
+			}
+			
+			if (!found && rsl.getLevel() == 1)
+				result.add(rsl);
 		}
 		return result;
 	}

@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.loginserver;
 
 import java.io.IOException;
@@ -20,10 +6,6 @@ import java.nio.ByteBuffer;
 import java.security.interfaces.RSAPrivateKey;
 import java.util.logging.Logger;
 
-import net.sf.l2j.Config;
-import net.sf.l2j.commons.mmocore.MMOClient;
-import net.sf.l2j.commons.mmocore.MMOConnection;
-import net.sf.l2j.commons.mmocore.SendablePacket;
 import net.sf.l2j.loginserver.crypt.LoginCrypt;
 import net.sf.l2j.loginserver.crypt.ScrambledKeyPair;
 import net.sf.l2j.loginserver.network.serverpackets.L2LoginServerPacket;
@@ -32,6 +14,10 @@ import net.sf.l2j.loginserver.network.serverpackets.LoginFail.LoginFailReason;
 import net.sf.l2j.loginserver.network.serverpackets.PlayFail;
 import net.sf.l2j.loginserver.network.serverpackets.PlayFail.PlayFailReason;
 import net.sf.l2j.util.Rnd;
+
+import org.mmocore.network.MMOClient;
+import org.mmocore.network.MMOConnection;
+import org.mmocore.network.SendablePacket;
 
 /**
  * Represents a client connected into the LoginServer
@@ -46,7 +32,7 @@ public final class L2LoginClient extends MMOClient<MMOConnection<L2LoginClient>>
 		CONNECTED,
 		AUTHED_GG,
 		AUTHED_LOGIN
-	}
+	};
 	
 	private LoginClientState _state;
 	
@@ -245,9 +231,6 @@ public final class L2LoginClient extends MMOClient<MMOConnection<L2LoginClient>>
 	@Override
 	public void onDisconnection()
 	{
-		if (Config.DEBUG)
-			_log.info("DISCONNECTED: " + toString());
-		
 		if (!hasJoinedGS() || (getConnectionStartTime() + LoginController.LOGIN_TIMEOUT) < System.currentTimeMillis())
 			LoginController.getInstance().removeAuthedLoginClient(getAccount());
 	}

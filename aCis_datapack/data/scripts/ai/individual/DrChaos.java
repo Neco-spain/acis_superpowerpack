@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package ai.individual;
 
 import ai.AbstractNpcAI;
@@ -28,17 +14,6 @@ import net.sf.l2j.gameserver.network.serverpackets.SpecialCamera;
 import net.sf.l2j.gameserver.templates.StatsSet;
 import net.sf.l2j.util.Rnd;
 
-/**
- * Dr. Chaos is a boss @ Pavel's Ruins. Some things to know :
- * <ul>
- * <li>As a mad scientist, he thinks all are spies, and for so if you stand too much longer near him you're considered as an "assassin from Black Anvil Guild".</li>
- * <li>You can chat with him, but if you try too much he will become angry.</li>
- * <li>That adaptation sends a decent cinematic made with the different social actions too.</li>
- * <li>The status of the RB is saved under GBs table, in order to retrieve the state if server restarts.</li>
- * <li>The spawn of the different NPCs (Dr. Chaos / War golem) is handled by that script aswell.</li>
- * </ul>
- * @author Kerberos, Tryskell.
- */
 public class DrChaos extends AbstractNpcAI
 {
 	private static final int DOCTOR_CHAOS = 32033;
@@ -48,7 +23,7 @@ public class DrChaos extends AbstractNpcAI
 	private static final byte CRAZY = 1; // Dr. Chaos entered on golem form.
 	private static final byte DEAD = 2; // Dr. Chaos has been killed and has not yet spawned.
 	
-	private long _lastAttackTime = 0;
+	private long _lastAttackVsGolem = 0;
 	private int _pissedOffTimer;
 	
 	public DrChaos(String name, String descr)
@@ -97,7 +72,7 @@ public class DrChaos extends AbstractNpcAI
 			_golem.setRunning();
 			
 			// start monitoring Dr. Chaos's inactivity
-			_lastAttackTime = System.currentTimeMillis();
+			_lastAttackVsGolem = System.currentTimeMillis();
 			startQuestTimer("golem_despawn", 60000, _golem, null, true);
 		}
 		// Spawn the regular NPC.
@@ -118,7 +93,7 @@ public class DrChaos extends AbstractNpcAI
 		{
 			if (npc.getNpcId() == CHAOS_GOLEM)
 			{
-				if (_lastAttackTime + 1800000 < System.currentTimeMillis())
+				if (_lastAttackVsGolem + 1800000 < System.currentTimeMillis())
 				{
 					// Despawn the war golem.
 					npc.deleteMe();
@@ -157,7 +132,7 @@ public class DrChaos extends AbstractNpcAI
 			npc.broadcastPacket(new PlaySound(1, "Rm03_A", 0, 0, 0, 0, 0));
 			
 			// start monitoring Dr. Chaos's inactivity
-			_lastAttackTime = System.currentTimeMillis();
+			_lastAttackVsGolem = System.currentTimeMillis();
 			startQuestTimer("golem_despawn", 60000, npc, null, true);
 		}
 		// Check every sec if someone is in range, if found, launch one task to decrease the timer.
@@ -271,6 +246,7 @@ public class DrChaos extends AbstractNpcAI
 	/**
 	 * Launches the complete animation.
 	 * @param npc the midget.
+	 * @param player the victim.
 	 */
 	private void crazyMidgetBecomesAngry(L2Npc npc)
 	{

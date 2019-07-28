@@ -1,27 +1,16 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.model.actor;
+
+import Extensions.Events.Phoenix.EventManager;
+import Extensions.Vip.VIPEngine;
 
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.List;
 import java.util.logging.Level;
 
 import net.sf.l2j.Config;
-import net.sf.l2j.commons.lang.StringUtil;
 import net.sf.l2j.gameserver.ThreadPoolManager;
 import net.sf.l2j.gameserver.ai.CtrlIntention;
 import net.sf.l2j.gameserver.cache.HtmCache;
@@ -48,6 +37,7 @@ import net.sf.l2j.gameserver.model.ShotType;
 import net.sf.l2j.gameserver.model.actor.instance.L2FishermanInstance;
 import net.sf.l2j.gameserver.model.actor.instance.L2MerchantInstance;
 import net.sf.l2j.gameserver.model.actor.instance.L2PcInstance;
+import net.sf.l2j.gameserver.model.actor.instance.L2SummonInstance;
 import net.sf.l2j.gameserver.model.actor.instance.L2TeleporterInstance;
 import net.sf.l2j.gameserver.model.actor.instance.L2WarehouseInstance;
 import net.sf.l2j.gameserver.model.actor.knownlist.NpcKnownList;
@@ -83,6 +73,7 @@ import net.sf.l2j.gameserver.templates.L2HelperBuff;
 import net.sf.l2j.gameserver.templates.skills.L2SkillType;
 import net.sf.l2j.gameserver.util.Broadcast;
 import net.sf.l2j.util.Rnd;
+import net.sf.l2j.util.StringUtil;
 
 /**
  * This class represents a Non-Player-Character in the world. They are split in :
@@ -98,7 +89,8 @@ public class L2Npc extends L2Character
 {
 	public static final int INTERACTION_DISTANCE = 150;
 	private static final int SOCIAL_INTERVAL = 12000;
-	
+	final Calendar now = Calendar.getInstance();
+	final private int day = now.get(Calendar.DAY_OF_WEEK);
 	private L2Spawn _spawn;
 	
 	volatile boolean _isDecayed = false;
@@ -513,7 +505,19 @@ public class L2Npc extends L2Character
 	}
 	
 	/**
-	 * Manage the shift && left click action.
+	 * Manage and Display the GM console to modify the L2Npc (GM only).<BR>
+	 * <BR>
+	 * <B><U> Actions (If the L2PcInstance is a GM only)</U> :</B><BR>
+	 * <BR>
+	 * <li>Set the L2Npc as target of the L2PcInstance player (if necessary)</li> <li>Send MyTargetSelected to the L2PcInstance player (display the select window)</li> <li>If L2Npc is autoAttackable, send StatusUpdate to the L2PcInstance in order to update L2Npc HP bar</li> <li>Send a Server->Client
+	 * NpcHtmlMessage() containing the GM console about this L2Npc</li><BR>
+	 * <BR>
+	 * <FONT COLOR=#FF0000><B> <U>Caution</U> : Each group of Server->Client packet must be terminated by a ActionFailed packet in order to avoid that client wait an other packet</B></FONT><BR>
+	 * <BR>
+	 * <B><U> Example of use </U> :</B><BR>
+	 * <BR>
+	 * <li>Client packet : Action</li><BR>
+	 * <BR>
 	 */
 	@Override
 	public void onActionShift(L2PcInstance player)
@@ -521,8 +525,9 @@ public class L2Npc extends L2Character
 		// Check if the L2PcInstance is a GM
 		if (player.isGM())
 		{
-			final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
+			NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
 			html.setFile("data/html/admin/npcinfo.htm");
+			
 			html.replace("%class%", getClass().getSimpleName());
 			html.replace("%id%", getTemplate().getNpcId());
 			html.replace("%lvl%", getTemplate().getLevel());
@@ -536,6 +541,7 @@ public class L2Npc extends L2Character
 			html.replace("%hpmax%", getMaxHp());
 			html.replace("%mp%", (int) getCurrentMp());
 			html.replace("%mpmax%", getMaxMp());
+			
 			html.replace("%patk%", getPAtk(null));
 			html.replace("%matk%", getMAtk(null, null));
 			html.replace("%pdef%", getPDef(null));
@@ -554,6 +560,7 @@ public class L2Npc extends L2Character
 			html.replace("%men%", getMEN());
 			html.replace("%loc%", getX() + " " + getY() + " " + getZ());
 			html.replace("%dist%", (int) Math.sqrt(player.getDistanceSq(this)));
+			
 			html.replace("%ele_fire%", getDefenseElementValue((byte) 2));
 			html.replace("%ele_water%", getDefenseElementValue((byte) 3));
 			html.replace("%ele_wind%", getDefenseElementValue((byte) 1));
@@ -588,7 +595,6 @@ public class L2Npc extends L2Character
 				html.replace("%ai_intention%", "");
 				html.replace("%ai%", "");
 			}
-			
 			html.replace("%ai_type%", getAiType().name());
 			html.replace("%ai_clan%", (getClans() != null) ? "<tr><td width=100><font color=\"LEVEL\">Clan:</font></td><td align=right width=170>" + Arrays.toString(getClans()) + " " + getClanRange() + "</td></tr>" + ((getIgnoredIds() != null) ? "<tr><td width=100><font color=\"LEVEL\">Ignored ids:</font></td><td align=right width=170>" + Arrays.toString(getIgnoredIds()) + "</td></tr>" : "") : "");
 			html.replace("%ai_move%", String.valueOf(canMove()));
@@ -664,7 +670,7 @@ public class L2Npc extends L2Character
 	{
 		if (command.equalsIgnoreCase("TerritoryStatus"))
 		{
-			final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
+			NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
 			
 			if (getCastle().getOwnerId() > 0)
 			{
@@ -725,7 +731,7 @@ public class L2Npc extends L2Character
 			if (path.indexOf("..") != -1)
 				return;
 			
-			final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
+			NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
 			html.setFile("data/html/" + path);
 			html.replace("%objectId%", getObjectId());
 			player.sendPacket(html);
@@ -852,24 +858,30 @@ public class L2Npc extends L2Character
 	}
 	
 	/**
-	 * Open a quest window on client with the text of the L2Npc. Create the QuestState if not existing.
-	 * @param player : the L2PcInstance that talk with the L2Npc.
-	 * @param npc : the L2Npc instance.
-	 * @param quest : the quest HTMLs to show.
+	 * Open a quest window on client with the text of the L2NpcInstance.<BR>
+	 * <BR>
+	 * <B><U> Actions</U> :</B><BR>
+	 * <BR>
+	 * <li>Get the text of the quest state in the folder data/scripts/quests/questId/stateId.htm</li> <li>Send a Server->Client NpcHtmlMessage containing the text of the L2NpcInstance to the L2PcInstance</li> <li>Send a Server->Client ActionFailed to the L2PcInstance in order to avoid that the
+	 * client wait another packet</li><BR>
+	 * <BR>
+	 * @param player The L2PcInstance that talk with the L2NpcInstance
+	 * @param npc The L2Npc instance.
+	 * @param quest
 	 */
 	public static void showQuestWindowSingle(L2PcInstance player, L2Npc npc, Quest quest)
 	{
 		if (quest == null)
 		{
-			final NpcHtmlMessage html = new NpcHtmlMessage(npc.getObjectId());
-			html.setHtml(Quest.getNoQuestMsg());
-			player.sendPacket(html);
+			NpcHtmlMessage npcReply = new NpcHtmlMessage(npc.getObjectId());
+			npcReply.setHtml(Quest.getNoQuestMsg());
+			player.sendPacket(npcReply);
 			
 			player.sendPacket(ActionFailed.STATIC_PACKET);
 			return;
 		}
 		
-		if (quest.isRealQuest() && (player.getWeightPenalty() >= 3 || player.getInventoryLimit() * 0.8 <= player.getInventory().getSize()))
+		if (quest.isRealQuest() && (player.getWeightPenalty() >= 3 || !player.isInventoryUnder80(true)))
 		{
 			player.sendPacket(SystemMessageId.INVENTORY_LESS_THAN_80_PERCENT);
 			return;
@@ -880,9 +892,9 @@ public class L2Npc extends L2Character
 		{
 			if (quest.isRealQuest() && player.getAllQuests(false).size() >= 25)
 			{
-				final NpcHtmlMessage html = new NpcHtmlMessage(npc.getObjectId());
-				html.setHtml(Quest.getTooMuchQuestsMsg());
-				player.sendPacket(html);
+				NpcHtmlMessage npcReply = new NpcHtmlMessage(npc.getObjectId());
+				npcReply.setHtml(Quest.getTooMuchQuestsMsg());
+				player.sendPacket(npcReply);
 				
 				player.sendPacket(ActionFailed.STATIC_PACKET);
 				return;
@@ -905,10 +917,13 @@ public class L2Npc extends L2Character
 	 */
 	public static void showQuestWindowChoose(L2PcInstance player, L2Npc npc, List<Quest> quests)
 	{
-		final StringBuilder sb = new StringBuilder("<html><body>");
+		final StringBuilder sb = StringUtil.startAppend(150, "<html><body>");
 		
 		for (Quest q : quests)
 		{
+			if (q == null)
+				continue;
+			
 			StringUtil.append(sb, "<a action=\"bypass -h npc_%objectId%_Quest ", q.getName(), "\">[", q.getDescr());
 			
 			final QuestState qs = player.getQuestState(q.getName());
@@ -922,10 +937,10 @@ public class L2Npc extends L2Character
 		
 		sb.append("</body></html>");
 		
-		final NpcHtmlMessage html = new NpcHtmlMessage(npc.getObjectId());
-		html.setHtml(sb.toString());
-		html.replace("%objectId%", npc.getObjectId());
-		player.sendPacket(html);
+		NpcHtmlMessage npcReply = new NpcHtmlMessage(npc.getObjectId());
+		npcReply.setHtml(sb.toString());
+		npcReply.replace("%objectId%", npc.getObjectId());
+		player.sendPacket(npcReply);
 		
 		player.sendPacket(ActionFailed.STATIC_PACKET);
 	}
@@ -1022,7 +1037,12 @@ public class L2Npc extends L2Character
 	}
 	
 	/**
-	 * Open a Loto window on client with the text of the L2Npc.
+	 * Open a Loto window on client with the text of the L2Npc.<BR>
+	 * <BR>
+	 * <B><U> Actions</U> :</B><BR>
+	 * <BR>
+	 * <li>Get the text of the selected HTML file in function of the npcId and of the page number</li> <li>Send a Server->Client NpcHtmlMessage containing the text of the L2Npc to the L2PcInstance</li> <li>Send a Server->Client ActionFailed to the L2PcInstance in order to avoid that the client wait
+	 * another packet</li><BR>
 	 * @param player The L2PcInstance that talk with the L2Npc
 	 * @param val The number of the page of the L2Npc to display
 	 */
@@ -1036,12 +1056,13 @@ public class L2Npc extends L2Character
 	public void showLotoWindow(L2PcInstance player, int val)
 	{
 		int npcId = getTemplate().getNpcId();
-		
-		final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
+		String filename;
+		NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
 		
 		if (val == 0) // 0 - first buy lottery ticket window
 		{
-			html.setFile(getHtmlPath(npcId, 1));
+			filename = (getHtmlPath(npcId, 1));
+			html.setFile(filename);
 		}
 		else if (val >= 1 && val <= 21) // 1-20 - buttons, 21 - second buy lottery ticket window
 		{
@@ -1058,7 +1079,8 @@ public class L2Npc extends L2Character
 				return;
 			}
 			
-			html.setFile(getHtmlPath(npcId, 5));
+			filename = (getHtmlPath(npcId, 5));
+			html.setFile(filename);
 			
 			int count = 0;
 			int found = 0;
@@ -1150,59 +1172,61 @@ public class L2Npc extends L2Character
 			item.setCustomType2(type2);
 			player.addItem("Loto", item, player, true);
 			
-			html.setFile(getHtmlPath(npcId, 3));
+			filename = (getHtmlPath(npcId, 3));
+			html.setFile(filename);
 		}
 		else if (val == 23) // 23 - current lottery jackpot
 		{
-			html.setFile(getHtmlPath(npcId, 3));
+			filename = (getHtmlPath(npcId, 3));
+			html.setFile(filename);
 		}
 		else if (val == 24) // 24 - Previous winning numbers/Prize claim
 		{
-			final int lotoNumber = Lottery.getInstance().getId();
+			filename = (getHtmlPath(npcId, 4));
+			html.setFile(filename);
 			
-			final StringBuilder sb = new StringBuilder();
+			int lotonumber = Lottery.getInstance().getId();
+			String message = "";
 			for (ItemInstance item : player.getInventory().getItems())
 			{
 				if (item == null)
 					continue;
-				
-				if (item.getItemId() == 4442 && item.getCustomType1() < lotoNumber)
+				if (item.getItemId() == 4442 && item.getCustomType1() < lotonumber)
 				{
-					StringUtil.append(sb, "<a action=\"bypass -h npc_%objectId%_Loto ", item.getObjectId(), "\">", item.getCustomType1(), " Event Number ");
-					
+					message = message + "<a action=\"bypass -h npc_%objectId%_Loto " + item.getObjectId() + "\">" + item.getCustomType1() + " Event Number ";
 					int[] numbers = Lottery.decodeNumbers(item.getEnchantLevel(), item.getCustomType2());
 					for (int i = 0; i < 5; i++)
-						StringUtil.append(sb, numbers[i], " ");
-					
+					{
+						message += numbers[i] + " ";
+					}
 					int[] check = Lottery.checkTicket(item);
 					if (check[0] > 0)
 					{
 						switch (check[0])
 						{
 							case 1:
-								sb.append("- 1st Prize");
+								message += "- 1st Prize";
 								break;
 							case 2:
-								sb.append("- 2nd Prize");
+								message += "- 2nd Prize";
 								break;
 							case 3:
-								sb.append("- 3th Prize");
+								message += "- 3th Prize";
 								break;
 							case 4:
-								sb.append("- 4th Prize");
+								message += "- 4th Prize";
 								break;
 						}
-						StringUtil.append(sb, " ", check[1], "a.");
+						message += " " + check[1] + "a.";
 					}
-					sb.append("</a><br>");
+					message += "</a><br>";
 				}
 			}
 			
-			if (sb.length() == 0)
-				sb.append("There is no winning lottery ticket...<br>");
+			if (message.isEmpty())
+				message += "There is no winning lottery ticket...<br>";
 			
-			html.setFile(getHtmlPath(npcId, 4));
-			html.replace("%result%", sb.toString());
+			html.replace("%result%", message);
 		}
 		else if (val > 24) // >24 - check lottery ticket by item object id
 		{
@@ -1297,20 +1321,20 @@ public class L2Npc extends L2Character
 		// If the player is too high level, display a message and return
 		if (player_level > higestLevel || !player.isNewbie())
 		{
-			final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
-			html.setHtml("<html><body>Newbie Guide:<br>Only a <font color=\"LEVEL\">novice character of level " + higestLevel + " or less</font> can receive my support magic.<br>Your novice character is the first one that you created and raised in this world.</body></html>");
-			html.replace("%objectId%", getObjectId());
-			player.sendPacket(html);
+			NpcHtmlMessage npcReply = new NpcHtmlMessage(getObjectId());
+			npcReply.setHtml("<html><body>Newbie Guide:<br>Only a <font color=\"LEVEL\">novice character of level " + higestLevel + " or less</font> can receive my support magic.<br>Your novice character is the first one that you created and raised in this world.</body></html>");
+			npcReply.replace("%objectId%", getObjectId());
+			player.sendPacket(npcReply);
 			return;
 		}
 		
 		// If the player is too low level, display a message and return
 		if (player_level < lowestLevel)
 		{
-			final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
-			html.setHtml("<html><body>Come back here when you have reached level " + lowestLevel + ". I will give you support magic then.</body></html>");
-			html.replace("%objectId%", getObjectId());
-			player.sendPacket(html);
+			NpcHtmlMessage npcReply = new NpcHtmlMessage(getObjectId());
+			npcReply.setHtml("<html><body>Come back here when you have reached level " + lowestLevel + ". I will give you support magic then.</body></html>");
+			npcReply.replace("%objectId%", getObjectId());
+			player.sendPacket(npcReply);
 			return;
 		}
 		
@@ -1340,12 +1364,12 @@ public class L2Npc extends L2Character
 	 */
 	private boolean showPkDenyChatWindow(L2PcInstance player, String type)
 	{
-		String content = HtmCache.getInstance().getHtm("data/html/" + type + "/" + getNpcId() + "-pk.htm");
-		if (content != null)
+		String html = HtmCache.getInstance().getHtm("data/html/" + type + "/" + getNpcId() + "-pk.htm");
+		if (html != null)
 		{
-			final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
-			html.setHtml(content);
-			player.sendPacket(html);
+			NpcHtmlMessage pkDenyMsg = new NpcHtmlMessage(getObjectId());
+			pkDenyMsg.setHtml(html);
+			player.sendPacket(pkDenyMsg);
 			player.sendPacket(ActionFailed.STATIC_PACKET);
 			return true;
 		}
@@ -1354,7 +1378,12 @@ public class L2Npc extends L2Character
 	}
 	
 	/**
-	 * Open a chat window on client with the text of the L2Npc.
+	 * Open a chat window on client with the text of the L2Npc.<BR>
+	 * <BR>
+	 * <B><U> Actions</U> :</B><BR>
+	 * <BR>
+	 * <li>Get the text of the selected HTML file in function of the npcId and of the page number</li> <li>Send a Server->Client NpcHtmlMessage containing the text of the L2Npc to the L2PcInstance</li> <li>Send a Server->Client ActionFailed to the L2PcInstance in order to avoid that the client wait
+	 * another packet</li><BR>
 	 * @param player The L2PcInstance that talk with the L2Npc
 	 */
 	public void showChatWindow(L2PcInstance player)
@@ -1396,7 +1425,21 @@ public class L2Npc extends L2Character
 		else
 			filename = getHtmlPath(npcId, val);
 		
-		final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
+		if (npcId == EventManager.getInstance().getInt("managerNpcId"))
+		{
+			EventManager.getInstance().showFirstHtml(player, getObjectId());
+			player.sendPacket(ActionFailed.STATIC_PACKET);
+			return;
+		}
+		
+		if (EventManager.getInstance().isRunning() && EventManager.getInstance().isRegistered(player) && EventManager.getInstance().getCurrentEvent().onTalkNpc(this, player))
+		{
+			player.sendPacket(ActionFailed.STATIC_PACKET);
+			return;
+		}
+		
+		// Send a Server->Client NpcHtmlMessage containing the text of the L2Npc to the L2PcInstance
+		NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
 		html.setFile(filename);
 		html.replace("%objectId%", getObjectId());
 		player.sendPacket(html);
@@ -1415,7 +1458,8 @@ public class L2Npc extends L2Character
 	 */
 	public void showChatWindow(L2PcInstance player, String filename)
 	{
-		final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
+		// Send a Server->Client NpcHtmlMessage containing the text of the L2Npc to the L2PcInstance
+		NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
 		html.setFile(filename);
 		html.replace("%objectId%", getObjectId());
 		player.sendPacket(html);
@@ -1424,20 +1468,64 @@ public class L2Npc extends L2Character
 		player.sendPacket(ActionFailed.STATIC_PACKET);
 	}
 	
+	private int normalExp = (int) (getTemplate().getRewardExp() * Config.RATE_XP);
+	private int saturdayExp = (int) (getTemplate().getRewardExp() * Config.SATURDAY_RATE_XP);
+	private int sundayExp = (int) (getTemplate().getRewardExp() * Config.SUNDAY_RATE_XP);
+	private int vipExp = (int) (getTemplate().getRewardExp() * Config.RATE_XP_VIP);
 	/**
+	 * @param killer
 	 * @return the Exp Reward of this L2Npc contained in the L2NpcTemplate (modified by RATE_XP).
 	 */
-	public int getExpReward()
+	public int getExpReward(L2Character killer)
 	{
-		return (int) (getTemplate().getRewardExp() * Config.RATE_XP);
+		if (day == Calendar.SATURDAY)
+		{
+			if (((VIPEngine.getInstance().isVip(killer)) || (killer instanceof L2SummonInstance && VIPEngine.getInstance().isVip(((L2Summon) killer).getOwner()))) && Config.VIPS_RATE_CONFIG)
+				return saturdayExp + vipExp;
+			return saturdayExp + normalExp;
+		}
+		else if (day == Calendar.SUNDAY)
+		{
+			if (((VIPEngine.getInstance().isVip(killer)) || (killer instanceof L2SummonInstance && VIPEngine.getInstance().isVip(((L2Summon) killer).getOwner()))) && Config.VIPS_RATE_CONFIG)
+				return sundayExp + vipExp;
+			return sundayExp + normalExp;
+		}
+		else
+		{
+			if (((VIPEngine.getInstance().isVip(killer)) || (killer instanceof L2SummonInstance && VIPEngine.getInstance().isVip(((L2Summon) killer).getOwner()))) && Config.VIPS_RATE_CONFIG)
+				return vipExp;
+			return normalExp;
+		}
 	}
 	
+	private int normalSp = (int) (getTemplate().getRewardSp() * Config.RATE_SP);
+	private int saturdaySp = (int) (getTemplate().getRewardSp() * Config.SATURDAY_RATE_SP);
+	private int sundaySp = (int) (getTemplate().getRewardSp() * Config.SUNDAY_RATE_SP);
+	private int vipSp = (int) (getTemplate().getRewardSp() * Config.RATE_SP_VIP);
 	/**
+	 * @param killer
 	 * @return the SP Reward of this L2Npc contained in the L2NpcTemplate (modified by RATE_SP).
 	 */
-	public int getSpReward()
+	public int getSpReward(L2Character killer)
 	{
-		return (int) (getTemplate().getRewardSp() * Config.RATE_SP);
+		if (day == Calendar.SATURDAY)
+		{
+			if (((VIPEngine.getInstance().isVip(killer)) || (killer instanceof L2SummonInstance && VIPEngine.getInstance().isVip(((L2Summon) killer).getOwner()))) && Config.VIPS_RATE_CONFIG)
+				return saturdaySp + vipSp;
+			return saturdaySp + normalSp;
+		}
+		else if (day == Calendar.SUNDAY)
+		{
+			if (((VIPEngine.getInstance().isVip(killer)) || (killer instanceof L2SummonInstance && VIPEngine.getInstance().isVip(((L2Summon) killer).getOwner()))) && Config.VIPS_RATE_CONFIG)
+				return sundaySp + vipSp;
+			return sundaySp + normalSp;
+		}
+		else
+		{
+			if (((VIPEngine.getInstance().isVip(killer)) || (killer instanceof L2SummonInstance && VIPEngine.getInstance().isVip(((L2Summon) killer).getOwner()))) && Config.VIPS_RATE_CONFIG)
+				return vipSp;
+			return normalSp;
+		}
 	}
 	
 	/**
@@ -1467,7 +1555,7 @@ public class L2Npc extends L2Character
 		_currentEnchant = getTemplate().getEnchantEffect();
 		_currentCollisionHeight = getTemplate().getCollisionHeight();
 		_currentCollisionRadius = getTemplate().getCollisionRadius();
-		DecayTaskManager.getInstance().add(this, getTemplate().getCorpseTime());
+		DecayTaskManager.getInstance().add(this);
 		return true;
 	}
 	
@@ -1627,6 +1715,11 @@ public class L2Npc extends L2Character
 	public int getCollisionRadius()
 	{
 		return _currentCollisionRadius;
+	}
+	
+	public int getCorpseDecayTime()
+	{
+		return getTemplate().getCorpseTime() * 1000;
 	}
 	
 	public int getScriptValue()

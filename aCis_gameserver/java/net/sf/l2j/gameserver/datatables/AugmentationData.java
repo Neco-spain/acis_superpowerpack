@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.datatables;
 
 import java.io.File;
@@ -116,16 +102,9 @@ public class AugmentationData
 		load();
 		
 		// Use size*4: since theres 4 blocks of stat-data with equivalent size
-		_log.info("AugmentationData: Loaded " + _augStats.length + " sets of " + (_augStats[0].size() * 4) + " augmentation stats.");
-		
-		int blue = 0, purple = 0, red = 0;
+		_log.info("AugmentationData: Loaded: " + (_augStats[0].size() * 4) + " augmentation stats.");
 		for (int i = 0; i < 10; i++)
-		{
-			blue += _blueSkills[i].size();
-			purple += _purpleSkills[i].size();
-			red += _redSkills[i].size();
-		}
-		_log.info("AugmentationData: Loaded " + blue + " blue, " + purple + " purple and " + red + " red Life-Stone skills.");
+			_log.info("AugmentationData: Loaded " + _blueSkills[i].size() + " blue, " + _purpleSkills[i].size() + " purple and " + _redSkills[i].size() + " red skills for LS lvl " + i + ".");
 	}
 	
 	public static class AugmentationSkill
@@ -238,15 +217,11 @@ public class AugmentationData
 							}
 							if (skillId == 0)
 							{
-								if (Config.DEBUG)
-									_log.log(Level.SEVERE, "AugmentationData: Bad skillId in augmentation_skillmap.xml for id:" + augmentationId);
 								badAugmantData++;
 								continue;
 							}
 							else if (skillLvL == 0)
 							{
-								if (Config.DEBUG)
-									_log.log(Level.SEVERE, "AugmentationData: Bad skillLevel in augmentation_skillmap.xml for id:" + augmentationId);
 								badAugmantData++;
 								continue;
 							}
@@ -470,9 +445,6 @@ public class AugmentationData
 				offset = (lifeStoneLevel * STAT_SUBBLOCKSIZE) + Rnd.get(0, 1) * STAT_BLOCKSIZE + (lifeStoneGrade + resultColor) / 2 * (10 * STAT_SUBBLOCKSIZE) + 1;
 		}
 		stat12 = Rnd.get(offset, offset + STAT_SUBBLOCKSIZE - 1);
-		
-		if (Config.DEBUG)
-			_log.info("Augmentation success: stat12=" + stat12 + "; stat34=" + stat34 + "; resultColor=" + resultColor + "; level=" + lifeStoneLevel + "; grade=" + lifeStoneGrade);
 		
 		return new L2Augmentation(((stat34 << 16) + stat12), skill);
 	}

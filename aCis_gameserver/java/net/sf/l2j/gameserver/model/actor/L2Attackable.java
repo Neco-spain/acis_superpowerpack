@@ -1,18 +1,7 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.model.actor;
+
+import Extensions.Protection.L2AntiBot;
+import Extensions.Vip.VIPEngine;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -46,12 +35,14 @@ import net.sf.l2j.gameserver.model.holder.ItemHolder;
 import net.sf.l2j.gameserver.model.item.DropCategory;
 import net.sf.l2j.gameserver.model.item.DropData;
 import net.sf.l2j.gameserver.model.item.instance.ItemInstance;
+import net.sf.l2j.gameserver.model.item.type.EtcItemType;
 import net.sf.l2j.gameserver.model.quest.Quest;
 import net.sf.l2j.gameserver.model.quest.QuestEventType;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.clientpackets.Say2;
 import net.sf.l2j.gameserver.network.serverpackets.CreatureSay;
 import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
+import net.sf.l2j.gameserver.taskmanager.ItemsAutoDestroyTaskManager;
 import net.sf.l2j.gameserver.util.Util;
 import net.sf.l2j.util.Rnd;
 
@@ -450,6 +441,12 @@ public class L2Attackable extends L2Npc
 		if (!super.doDie(killer))
 			return false;
 		
+		// Antibot
+		if (Config.ANTIBOT_ENABLE && (killer != null) && killer instanceof L2PcInstance && (killer.getLevel() >= Config.ANTIBOT_MIN_LEVEL) && (killer.getInstanceId() == 0))
+		{
+			L2AntiBot.getInstance().antibot(killer);
+		}
+		
 		// Notify the Quest Engine of the L2Attackable death if necessary
 		try
 		{
@@ -587,7 +584,7 @@ public class L2Attackable extends L2Npc
 					// Calculate the difference of level between this attacker and the L2Attackable.
 					final int levelDiff = attacker.getLevel() - getLevel();
 					
-					final int[] expSp = calculateExpAndSp(levelDiff, damage, totalDamage);
+					final int[] expSp = calculateExpAndSp(levelDiff, damage, totalDamage, lastAttacker);
 					long exp = expSp[0];
 					int sp = expSp[1];
 					
@@ -599,17 +596,17 @@ public class L2Attackable extends L2Npc
 					
 					exp *= 1 - penalty;
 					
-					if (isOverhit() && _overhitAttacker != null && _overhitAttacker.getActingPlayer() != null && attacker == _overhitAttacker.getActingPlayer())
+					if (isOverhit() && getOverhitAttacker().getActingPlayer() != null && attacker == getOverhitAttacker().getActingPlayer())
 					{
 						attacker.sendPacket(SystemMessageId.OVER_HIT);
 						exp += calculateOverhitExp(exp);
 					}
 					
 					// Set new karma.
-					attacker.updateKarmaLoss(exp);
+					attacker.updateKarmaLoss(Math.round(exp));
 					
 					// Distribute the Exp and SP between the L2PcInstance and its L2Summon.
-					attacker.addExpAndSp(exp, sp);
+					attacker.addExpAndSp(Math.round(exp), sp);
 				}
 			}
 			// Share with party members.
@@ -666,7 +663,7 @@ public class L2Attackable extends L2Npc
 				final int levelDiff = partyLvl - getLevel();
 				
 				// Calculate Exp and SP rewards
-				final int[] expSp = calculateExpAndSp(levelDiff, partyDmg, totalDamage);
+				final int[] expSp = calculateExpAndSp(levelDiff, partyDmg, totalDamage, lastAttacker);
 				long exp = expSp[0];
 				int sp = expSp[1];
 				
@@ -681,7 +678,7 @@ public class L2Attackable extends L2Npc
 				
 				// Check for an over-hit enabled strike
 				// (When in party, the over-hit exp bonus is given to the whole party and splitted proportionally through the party members)
-				if (isOverhit() && _overhitAttacker != null && _overhitAttacker.getActingPlayer() != null && attacker == _overhitAttacker.getActingPlayer())
+				if (isOverhit() && getOverhitAttacker().getActingPlayer() != null && attacker == getOverhitAttacker().getActingPlayer())
 				{
 					attacker.sendPacket(SystemMessageId.OVER_HIT);
 					exp += calculateOverhitExp(exp);
@@ -801,8 +798,14 @@ public class L2Attackable extends L2Npc
 				return;
 			}
 			
-			for (AggroInfo ai : _aggroList.values())
+			for (L2Character aggroed : _aggroList.keySet())
+			{
+				AggroInfo ai = _aggroList.get(aggroed);
+				if (ai == null)
+					return;
+				
 				ai.addHate(-amount);
+			}
 			
 			amount = getHating(mostHated);
 			
@@ -961,11 +964,26 @@ public class L2Attackable extends L2Npc
 		
 		// Applies Drop rates
 		if (drop.getItemId() == 57)
-			dropChance *= Config.RATE_DROP_ADENA;
+		{
+			if (VIPEngine.getInstance().isVip(lastAttacker) && Config.VIPS_RATE_CONFIG)
+				dropChance *= Config.RATE_DROP_ADENA_VIP;
+			else
+				dropChance *= Config.RATE_DROP_ADENA;
+		}
 		else if (isSweep)
-			dropChance *= Config.RATE_DROP_SPOIL;
+		{
+			if (VIPEngine.getInstance().isVip(lastAttacker) && Config.VIPS_RATE_CONFIG)
+				dropChance *= Config.RATE_DROP_SPOIL_VIP;
+			else
+				dropChance *= Config.RATE_DROP_SPOIL;
+		}
 		else
-			dropChance *= isRaid() && !isRaidMinion() ? Config.RATE_DROP_ITEMS_BY_RAID : Config.RATE_DROP_ITEMS;
+		{
+			if (VIPEngine.getInstance().isVip(lastAttacker) && Config.VIPS_RATE_CONFIG)
+				dropChance *= isRaid() && !isRaidMinion() ? Config.RATE_DROP_ITEMS_BY_RAID_VIP : Config.RATE_DROP_ITEMS_VIP;
+			else
+				dropChance *= isRaid() && !isRaidMinion() ? Config.RATE_DROP_ITEMS_BY_RAID : Config.RATE_DROP_ITEMS;
+		}
 		
 		if (isChampion())
 			dropChance *= Config.CHAMPION_REWARDS;
@@ -1035,7 +1053,10 @@ public class L2Attackable extends L2Npc
 		}
 		
 		// Applies Drop rates
-		categoryDropChance *= isRaid() && !isRaidMinion() ? Config.RATE_DROP_ITEMS_BY_RAID : Config.RATE_DROP_ITEMS;
+		if (VIPEngine.getInstance().isVip(lastAttacker) && Config.VIPS_RATE_CONFIG)
+			categoryDropChance *= isRaid() && !isRaidMinion() ? Config.RATE_DROP_ITEMS_BY_RAID_VIP : Config.RATE_DROP_ITEMS_VIP;
+		else
+			categoryDropChance *= isRaid() && !isRaidMinion() ? Config.RATE_DROP_ITEMS_BY_RAID : Config.RATE_DROP_ITEMS;
 		
 		if (isChampion())
 			categoryDropChance *= Config.CHAMPION_REWARDS;
@@ -1065,9 +1086,19 @@ public class L2Attackable extends L2Npc
 			
 			double dropChance = drop.getChance();
 			if (drop.getItemId() == 57)
-				dropChance *= Config.RATE_DROP_ADENA;
+			{
+				if (VIPEngine.getInstance().isVip(lastAttacker) && Config.VIPS_RATE_CONFIG)
+					dropChance *= Config.RATE_DROP_ADENA_VIP;
+				else
+					dropChance *= Config.RATE_DROP_ADENA;
+			}
 			else
-				dropChance *= isRaid() && !isRaidMinion() ? Config.RATE_DROP_ITEMS_BY_RAID : Config.RATE_DROP_ITEMS;
+			{
+				if (VIPEngine.getInstance().isVip(lastAttacker) && Config.VIPS_RATE_CONFIG)
+					dropChance *= isRaid() && !isRaidMinion() ? Config.RATE_DROP_ITEMS_BY_RAID_VIP : Config.RATE_DROP_ITEMS_VIP;
+				else
+					dropChance *= isRaid() && !isRaidMinion() ? Config.RATE_DROP_ITEMS_BY_RAID : Config.RATE_DROP_ITEMS;
+			}
 			
 			if (isChampion())
 				dropChance *= Config.CHAMPION_REWARDS;
@@ -1133,7 +1164,7 @@ public class L2Attackable extends L2Npc
 		return 0;
 	}
 	
-	private static ItemHolder calculateCategorizedHerbItem(DropCategory categoryDrops, int levelModifier)
+	private static ItemHolder calculateCategorizedHerbItem(L2PcInstance lastAttacker, DropCategory categoryDrops, int levelModifier)
 	{
 		if (categoryDrops == null)
 			return null;
@@ -1333,7 +1364,7 @@ public class L2Attackable extends L2Npc
 		{
 			for (DropCategory cat : HerbDropTable.getInstance().getHerbDroplist(getTemplate().getDropHerbGroup()))
 			{
-				final ItemHolder item = calculateCategorizedHerbItem(cat, levelModifier);
+				final ItemHolder item = calculateCategorizedHerbItem(player, cat, levelModifier);
 				if (item != null)
 				{
 					if (Config.AUTO_LOOT_HERBS)
@@ -1381,6 +1412,14 @@ public class L2Attackable extends L2Npc
 				ditem.getDropProtection().protect(mainDamageDealer);
 				ditem.dropMe(this, newX, newY, newZ);
 				
+				// Add drop to auto destroy item task
+				if (!Config.LIST_PROTECTED_ITEMS.contains(item.getId()))
+				{
+					if ((Config.ITEM_AUTO_DESTROY_TIME > 0 && ditem.getItemType() != EtcItemType.HERB) || (Config.HERB_AUTO_DESTROY_TIME > 0 && ditem.getItemType() == EtcItemType.HERB))
+						ItemsAutoDestroyTaskManager.getInstance().addItem(ditem);
+				}
+				ditem.setProtected(false);
+				
 				// If stackable, end loop as entire count is included in 1 instance of item
 				if (ditem.isStackable() || !Config.MULTIPLE_ITEM_DROP)
 					break;
@@ -1389,6 +1428,11 @@ public class L2Attackable extends L2Npc
 				_log.log(Level.SEVERE, "Item doesn't exist so cannot be dropped. Item ID: " + item.getId());
 		}
 		return ditem;
+	}
+	
+	public ItemInstance dropItem(L2PcInstance lastAttacker, int itemId, int itemCount)
+	{
+		return dropItem(lastAttacker, new ItemHolder(itemId, itemCount));
 	}
 	
 	/**
@@ -1561,15 +1605,16 @@ public class L2Attackable extends L2Npc
 	 * @param diff The difference of level between attacker (L2PcInstance, L2SummonInstance or L2Party) and the L2Attackable
 	 * @param damage The damages given by the attacker (L2PcInstance, L2SummonInstance or L2Party)
 	 * @param totalDamage The total damage done.
+	 * @param player
 	 * @return an array consisting of xp and sp values.
 	 */
-	private int[] calculateExpAndSp(int diff, int damage, long totalDamage)
+	private int[] calculateExpAndSp(int diff, int damage, long totalDamage, L2Character player)
 	{
 		if (diff < -5)
 			diff = -5;
 		
-		double xp = (double) getExpReward() * damage / totalDamage;
-		double sp = (double) getSpReward() * damage / totalDamage;
+		double xp = (double) getExpReward(player) * damage / totalDamage;
+		double sp = (double) getSpReward(player) * damage / totalDamage;
 		
 		final L2Skill hpSkill = getKnownSkill(4408);
 		if (hpSkill != null)

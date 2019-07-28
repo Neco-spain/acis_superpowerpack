@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.network.clientpackets;
 
 import net.sf.l2j.Config;
@@ -58,6 +44,12 @@ public final class RequestEnchantItem extends AbstractEnchantPacket
 			return;
 		}
 		
+		if (activeChar.isSubmitingPin())
+		{
+			activeChar.sendMessage("Unable to do any action while PIN is not submitted");
+			return;
+		}
+		
 		if (activeChar.isProcessingTransaction() || activeChar.isInStoreMode())
 		{
 			activeChar.sendPacket(SystemMessageId.CANNOT_ENCHANT_WHILE_STORE);
@@ -91,6 +83,125 @@ public final class RequestEnchantItem extends AbstractEnchantPacket
 			return;
 		}
 		
+		if (Config.CAN_ENCHANT_IN_CRAFT_MODE && activeChar.isInCraftMode())
+		{
+			activeChar.setActiveEnchantItem(null);
+			activeChar.sendMessage("Can't enchant while Crafting.");
+			return;
+		}
+		
+		if (Config.CAN_ENCHANT_IN_TELEPORTING && activeChar.isTeleporting())
+		{
+			activeChar.setActiveEnchantItem(null);
+			activeChar.sendMessage("Can't enchant while You Teleporting.");
+			return;
+		}
+		
+		if (Config.CAN_ENCHANT_IN_DEAD && activeChar.isDead())
+		{
+			activeChar.setActiveEnchantItem(null);
+			activeChar.sendMessage("Can't enchant while You Are Dead.");
+			return;
+		}
+		
+		if (Config.CAN_ENCHANT_IN_SLEEP && activeChar.isSleeping())
+		{
+			activeChar.setActiveEnchantItem(null);
+			activeChar.sendMessage("Can't enchant while You Are In Sleep.");
+			return;
+		}
+		
+		if (Config.CAN_ENCHANT_IN_PARALYZED && activeChar.isParalyzed())
+		{
+			activeChar.setActiveEnchantItem(null);
+			activeChar.sendMessage("Can't enchant while You Are In Paralyzed.");
+			return;
+		}
+		
+		if (Config.CAN_ENCHANT_IN_CASTING && activeChar.isCastingNow())
+		{
+			activeChar.setActiveEnchantItem(null);
+			activeChar.sendMessage("Can't enchant while Casting.");
+			return;
+		}
+		
+		if (Config.CAN_ENCHANT_IN_MOVING && activeChar.isMoving())
+		{
+			activeChar.setActiveEnchantItem(null);
+			activeChar.sendMessage("Can't enchant while moving.");
+			return;
+		}
+		
+		if (Config.CAN_ENCHANT_IN_TRADE && activeChar.isProcessingTransaction())
+		{
+			activeChar.setActiveEnchantItem(null);
+			activeChar.sendMessage("Can't enchant while trading.");
+			return;
+		}
+		
+		if (Config.CAN_ENCHANT_IN_STUNNED && activeChar.isStunned())
+		{
+			activeChar.setActiveEnchantItem(null);
+			activeChar.sendMessage("Can't enchant while stunned.");
+			return;
+		}
+		
+		if (Config.CAN_ENCHANT_IN_MOUNTED && activeChar.isMounted())
+		{
+			activeChar.setActiveEnchantItem(null);
+			activeChar.sendMessage("Can't enchant while mounted.");
+			return;
+		}
+		
+		if (Config.CAN_ENCHANT_IN_FAKEDEATH && activeChar.isFakeDeath())
+		{
+			activeChar.setActiveEnchantItem(null);
+			activeChar.sendMessage("Can't enchant while fake death skill is activated.");
+			return;
+		}
+		
+		if (Config.CAN_ENCHANT_IN_JAIL && activeChar.isInJail())
+		{
+			activeChar.setActiveEnchantItem(null);
+			activeChar.sendMessage("Can't enchant while you are jailed.");
+			return;
+		}
+		
+		if (Config.CAN_ENCHANT_IN_CURSED_WEAPON_EQUIP && activeChar.isCursedWeaponEquipped())
+		{
+			activeChar.setActiveEnchantItem(null);
+			activeChar.sendMessage("Can't enchant while you have karma.");
+			return;
+		}
+		
+		if (Config.CAN_ENCHANT_IN_FLYING && activeChar.isFlying())
+		{
+			activeChar.setActiveEnchantItem(null);
+			activeChar.sendMessage("Can't enchant while flying.");
+			return;
+		}
+		
+		if (Config.CAN_ENCHANT_IN_FISHING && activeChar.isFishing())
+		{
+			activeChar.setActiveEnchantItem(null);
+			activeChar.sendMessage("Can't enchant while fishing.");
+			return;
+		}
+		
+		if (Config.CAN_ENCHANT_IN_SITTING && activeChar.isSitting())
+		{
+			activeChar.setActiveEnchantItem(null);
+			activeChar.sendMessage("Can't enchant while sitting.");
+			return;
+		}
+		
+		if (Config.CAN_LOGOUT_IN_ENCHANT && activeChar.getActiveEnchantItem() != null)
+		{
+			activeChar.setActiveEnchantItem(null);
+			activeChar.sendMessage("You can't logout while enchanting.");
+			return;
+		}
+		
 		// attempting to destroy scroll
 		scroll = activeChar.getInventory().destroyItem("Enchant", scroll.getObjectId(), 1, activeChar, item);
 		if (scroll == null)
@@ -111,7 +222,7 @@ public final class RequestEnchantItem extends AbstractEnchantPacket
 		
 		synchronized (item)
 		{
-			double chance = scrollTemplate.getChance(item);
+			double chance = scrollTemplate.getChance(item, activeChar);
 			
 			// last validation check
 			if (item.getOwnerId() != activeChar.getObjectId() || !isEnchantable(item) || chance < 0)
@@ -233,7 +344,7 @@ public final class RequestEnchantItem extends AbstractEnchantPacket
 					// blessed enchant - clear enchant value
 					activeChar.sendPacket(SystemMessageId.BLESSED_ENCHANT_FAILED);
 					
-					item.setEnchantLevel(0);
+					item.setEnchantLevel(Config.BREAK_ENCHANT);
 					item.updateDatabase();
 					activeChar.sendPacket(EnchantResult.UNSUCCESS);
 				}

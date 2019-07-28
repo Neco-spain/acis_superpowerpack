@@ -1,18 +1,9 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver;
+
+import Extensions.Events.Phoenix.EventManager;
+import Extensions.Events.Phoenix.Engines.EventBuffer;
+import Extensions.Vip.VIPEngine;
+import classbalancer.ClassBalanceManager;
 
 import java.util.Collection;
 import java.util.logging.Level;
@@ -20,12 +11,13 @@ import java.util.logging.Logger;
 
 import net.sf.l2j.Config;
 import net.sf.l2j.L2DatabaseFactory;
-import net.sf.l2j.commons.lang.StringUtil;
 import net.sf.l2j.gameserver.datatables.BufferTable;
+import net.sf.l2j.gameserver.datatables.OfflineTradersTable;
 import net.sf.l2j.gameserver.instancemanager.CastleManorManager;
 import net.sf.l2j.gameserver.instancemanager.FishingChampionshipManager;
 import net.sf.l2j.gameserver.instancemanager.FourSepulchersManager;
 import net.sf.l2j.gameserver.instancemanager.GrandBossManager;
+import net.sf.l2j.gameserver.instancemanager.ItemsOnGroundManager;
 import net.sf.l2j.gameserver.instancemanager.RaidBossSpawnManager;
 import net.sf.l2j.gameserver.instancemanager.SevenSigns;
 import net.sf.l2j.gameserver.instancemanager.SevenSignsFestival;
@@ -38,9 +30,10 @@ import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.gameserverpackets.ServerStatus;
 import net.sf.l2j.gameserver.network.serverpackets.ServerClose;
 import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
-import net.sf.l2j.gameserver.taskmanager.ItemsOnGroundTaskManager;
-import net.sf.l2j.gameserver.taskmanager.MovementTaskManager;
 import net.sf.l2j.gameserver.util.Broadcast;
+import net.sf.l2j.util.Util;
+
+import skillsbalancer.SkillsBalanceManager;
 
 /**
  * This class provides functions for shutting down and restarting the server. It closes all client connections and saves data.
@@ -99,6 +92,15 @@ public class Shutdown extends Thread
 			_shutdownMode = GM_SHUTDOWN;
 	}
 	
+	public void autoRestart(int time)
+	{
+		_secondsShut = time;
+		countdown();
+		_shutdownMode = GM_RESTART;
+		SingletonHolder._instance.setMode(GM_RESTART);
+		System.exit(2);
+	}
+	
 	/**
 	 * get the shutdown-hook instance the shutdown-hook instance is created by the first call of this function, but it has to be registrered externaly.
 	 * @return instance of Shutdown, to be used as shutdown hook
@@ -117,7 +119,37 @@ public class Shutdown extends Thread
 	{
 		if (this == SingletonHolder._instance)
 		{
-			StringUtil.printSection("Under " + MODE_TEXT[_shutdownMode] + " process");
+			try
+			{
+				if ((Config.OFFLINE_TRADE_ENABLE || Config.OFFLINE_CRAFT_ENABLE) && Config.RESTORE_OFFLINERS)
+					OfflineTradersTable.getInstance().storeOffliners();
+			}
+			catch (Throwable t)
+			{
+				_log.log(Level.WARNING, "Error saving offline shops.", t);
+			}
+			
+			Util.printSection("Under " + MODE_TEXT[_shutdownMode] + " process");
+
+			try
+			{
+				ClassBalanceManager.getInstance().updateBalances();
+				_log.info("Class Balancer: Class Balances updated to database.");
+			}
+			catch (Throwable t)
+			{
+				_log.log(Level.WARNING, "Error while updating class balances to database: ", t);
+			}
+
+			try
+			{
+				SkillsBalanceManager.getInstance().updateBalances();
+				_log.info("Skills Balancer: Skill Balances updated to database.");
+			}
+			catch (Throwable t)
+			{
+				_log.log(Level.WARNING, "Error while updating skill balances to database: ", t);
+			}
 			
 			// disconnect players
 			try
@@ -132,7 +164,7 @@ public class Shutdown extends Thread
 			// ensure all services are stopped
 			try
 			{
-				MovementTaskManager.getInstance().interrupt();
+				GameTimeController.getInstance().stopTimer();
 			}
 			catch (Throwable t)
 			{
@@ -191,12 +223,24 @@ public class Shutdown extends Thread
 			FishingChampionshipManager.getInstance().shutdown();
 			_log.info("Fishing Championship data has been saved.");
 			
+			// Save vip data to DB
+			VIPEngine.getInstance().saveData();
+			_log.info("Vip players data has been saved.");
+			
 			// Schemes save.
 			BufferTable.getInstance().saveSchemes();
 			_log.info("BufferTable data has been saved.");
 			
+			if (EventManager.getInstance().getBoolean("eventBufferEnabled"))
+				EventBuffer.getInstance().updateSQL();
+			
 			// Save items on ground before closing
-			ItemsOnGroundTaskManager.getInstance().save();
+			if (Config.SAVE_DROPPED_ITEM)
+			{
+				ItemsOnGroundManager.getInstance().saveInDb();
+				ItemsOnGroundManager.getInstance().cleanUp();
+				_log.info("ItemsOnGroundManager: Items on ground have been saved.");
+			}
 			
 			try
 			{
@@ -314,7 +358,7 @@ public class Shutdown extends Thread
 			_log.warning("GM: " + activeChar.getName() + " (" + activeChar.getObjectId() + ") issued shutdown abort, " + MODE_TEXT[_shutdownMode] + " has been stopped.");
 			_counterInstance._abort();
 			
-			Broadcast.announceToOnlinePlayers("Server aborts " + MODE_TEXT[_shutdownMode] + " and continues normal operation.");
+			Announcements.announceToAll("Server aborts " + MODE_TEXT[_shutdownMode] + " and continues normal operation.");
 		}
 	}
 	

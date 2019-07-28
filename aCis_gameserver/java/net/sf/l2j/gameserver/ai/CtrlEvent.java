@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.ai;
 
 /**
@@ -45,10 +31,7 @@ public enum CtrlEvent
 	EVT_ARRIVED_BLOCKED,
 	/** Forgets an object (if it's used as attack target, follow target and so on. */
 	EVT_FORGET_OBJECT,
-	/**
-	 * Attempt to cancel current step execution, but not change the intention. For example, the actor was put into a stun, so it's current attack or movement has to be canceled. But after the stun state expired, the actor may try to attack again. Another usage for CANCEL is a user's attempt to
-	 * cancel a cast/bow attack and so on.
-	 */
+	/** Attempt to cancel current step execution, but not change the intention. For example, the actor was put into a stun, so it's current attack or movement has to be canceled. But after the stun state expired, the actor may try to attack again. Another usage for CANCEL is a user's attempt to cancel a cast/bow attack and so on. */
 	EVT_CANCEL,
 	/** The character is dead. */
 	EVT_DEAD,

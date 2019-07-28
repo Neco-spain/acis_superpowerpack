@@ -1,125 +1,123 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.taskmanager;
 
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Logger;
 
 import net.sf.l2j.gameserver.ThreadPoolManager;
 import net.sf.l2j.gameserver.model.actor.L2Attackable;
 import net.sf.l2j.gameserver.model.actor.L2Character;
 
 /**
- * Destroys {@link L2Character} corpse after specified time.
- * @author Hasha
+ * @author la2 Lets drink to code!
  */
-public final class DecayTaskManager implements Runnable
+public class DecayTaskManager
 {
-	private final Map<L2Character, Long> _characters = new ConcurrentHashMap<>();
+	protected static final Logger _log = Logger.getLogger(DecayTaskManager.class.getName());
+	protected Map<L2Character, Long> _decayTasks = new ConcurrentHashMap<>();
 	
-	public static final DecayTaskManager getInstance()
+	public static final int DEFAULT_DECAY_TIME = 7000;
+	
+	public DecayTaskManager()
+	{
+		ThreadPoolManager.getInstance().scheduleAiAtFixedRate(new DecayScheduler(), 10000, 5000);
+	}
+	
+	public static DecayTaskManager getInstance()
 	{
 		return SingletonHolder._instance;
 	}
 	
-	protected DecayTaskManager()
+	public void add(L2Character actor)
 	{
-		// Run task each second.
-		ThreadPoolManager.getInstance().scheduleAiAtFixedRate(this, 1000, 1000);
+		_decayTasks.put(actor, System.currentTimeMillis());
 	}
 	
-	/**
-	 * Adds {@link L2Character} to the DecayTask with additional interval.
-	 * @param character : {@link L2Character} to be added.
-	 * @param interval : Interval in seconds, after which the decay task is triggered.
-	 */
-	public final void add(L2Character character, int interval)
+	public void add(L2Character actor, int interval)
 	{
-		// if character is monster
-		if (character instanceof L2Attackable)
+		_decayTasks.put(actor, System.currentTimeMillis() + interval);
+	}
+	
+	public void cancel(L2Character actor)
+	{
+		try
 		{
-			final L2Attackable monster = ((L2Attackable) character);
-			
-			// monster is spoiled or seeded, double the corpse delay
-			if (monster.getSpoilerId() != 0 || monster.isSeeded())
-				interval *= 2;
+			_decayTasks.remove(actor);
+		}
+		catch (NoSuchElementException e)
+		{
+		}
+	}
+	
+	private class DecayScheduler implements Runnable
+	{
+		protected DecayScheduler()
+		{
+			// Do nothing
 		}
 		
-		_characters.put(character, System.currentTimeMillis() + interval * 1000);
-	}
-	
-	/**
-	 * Removes {@link L2Character} from the DecayTask.
-	 * @param actor : {@link L2Character} to be removed.
-	 */
-	public final void cancel(L2Character actor)
-	{
-		_characters.remove(actor);
-	}
-	
-	/**
-	 * Removes {@link L2Attackable} from the DecayTask.
-	 * @param monster : {@link L2Attackable} to be tested.
-	 * @return boolean : True, when action can be applied on a corpse.
-	 */
-	public final boolean isCorpseActionAllowed(L2Attackable monster)
-	{
-		// get time and verify, if corpse exists
-		Long time = _characters.get(monster);
-		if (time == null)
-			return false;
-		
-		// get corpse action interval, is half of corpse decay
-		int corpseTime = monster.getTemplate().getCorpseTime() * 1000 / 2;
-		
-		// monster is spoiled or seeded, double the corpse action interval
-		if (monster.getSpoilerId() != 0 || monster.isSeeded())
-			corpseTime *= 2;
-		
-		// check last corpse action time
-		return System.currentTimeMillis() < time - corpseTime;
+		@Override
+		public void run()
+		{
+			final long currentTime = System.currentTimeMillis();
+			int delay = DEFAULT_DECAY_TIME;
+			
+			Iterator<Entry<L2Character, Long>> it = _decayTasks.entrySet().iterator();
+			while (it.hasNext())
+			{
+				Entry<L2Character, Long> e = it.next();
+				L2Character actor = e.getKey();
+				Long next = e.getValue();
+				if (next == null)
+					continue;
+				
+				if (actor instanceof L2Attackable)
+				{
+					final L2Attackable npc = ((L2Attackable) actor);
+					
+					delay = npc.getCorpseDecayTime();
+					if (npc.getSpoilerId() != 0 || npc.isSeeded())
+						delay *= 2;
+				}
+				
+				if ((currentTime - next) > delay)
+				{
+					actor.onDecay();
+					it.remove();
+				}
+			}
+		}
 	}
 	
 	@Override
-	public final void run()
+	public String toString()
 	{
-		// List is empty, skip.
-		if (_characters.isEmpty())
-			return;
+		String ret = "============= DecayTask Manager Report ============\r\n";
+		ret += "Tasks count: " + _decayTasks.size() + "\r\n";
+		ret += "Tasks dump:\r\n";
 		
-		// Get current time.
-		final long time = System.currentTimeMillis();
-		
-		// Loop all characters.
-		for (Iterator<Map.Entry<L2Character, Long>> iterator = _characters.entrySet().iterator(); iterator.hasNext();)
+		Long current = System.currentTimeMillis();
+		for (L2Character actor : _decayTasks.keySet())
 		{
-			// Get entry of current iteration.
-			Map.Entry<L2Character, Long> entry = iterator.next();
-			
-			// Time hasn't passed yet, skip.
-			if (time < entry.getValue())
-				continue;
-			
-			// Decay character and remove task.
-			entry.getKey().onDecay();
-			iterator.remove();
+			ret += "Class/Name: " + actor.getClass().getSimpleName() + "/" + actor.getName() + " decay timer: " + (current - _decayTasks.get(actor)) + "\r\n";
 		}
+		
+		return ret;
 	}
 	
-	private static final class SingletonHolder
+	/**
+	 * <u><b><font color="FF0000">Read only.</font></b></u>
+	 * @return a Map containing all decay tasks.
+	 */
+	public Map<L2Character, Long> getTasks()
+	{
+		return _decayTasks;
+	}
+	
+	private static class SingletonHolder
 	{
 		protected static final DecayTaskManager _instance = new DecayTaskManager();
 	}

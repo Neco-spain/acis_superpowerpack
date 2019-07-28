@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package ai.individual;
 
 import ai.AbstractNpcAI;
@@ -25,7 +11,6 @@ import net.sf.l2j.gameserver.datatables.SkillTable;
 import net.sf.l2j.gameserver.geoengine.PathFinding;
 import net.sf.l2j.gameserver.instancemanager.GrandBossManager;
 import net.sf.l2j.gameserver.model.L2Skill;
-import net.sf.l2j.gameserver.model.SpawnLocation;
 import net.sf.l2j.gameserver.model.actor.L2Attackable;
 import net.sf.l2j.gameserver.model.actor.L2Character;
 import net.sf.l2j.gameserver.model.actor.L2Npc;
@@ -52,7 +37,7 @@ import net.sf.l2j.util.Rnd;
  */
 public class Baium extends AbstractNpcAI
 {
-	private static final L2BossZone BAIUM_LAIR = GrandBossManager.getInstance().getZoneById(110002);
+	private static final L2BossZone _baiumLair = GrandBossManager.getInstance().getZoneById(110002);
 	
 	private static final int STONE_BAIUM = 29025;
 	private static final int LIVE_BAIUM = 29020;
@@ -64,18 +49,43 @@ public class Baium extends AbstractNpcAI
 	public static final byte DEAD = 2; // baium has been killed and has not yet spawned. Entry is locked.
 	
 	// Archangels spawns
-	private static final SpawnLocation[] ANGEL_LOCATION =
+	private final static int ANGEL_LOCATION[][] =
 	{
-		new SpawnLocation(114239, 17168, 10080, 63544),
-		new SpawnLocation(115780, 15564, 10080, 13620),
-		new SpawnLocation(114880, 16236, 10080, 5400),
-		new SpawnLocation(115168, 17200, 10080, 0),
-		new SpawnLocation(115792, 16608, 10080, 0)
+		{
+			114239,
+			17168,
+			10080,
+			63544
+		},
+		{
+			115780,
+			15564,
+			10080,
+			13620
+		},
+		{
+			114880,
+			16236,
+			10080,
+			5400
+		},
+		{
+			115168,
+			17200,
+			10080,
+			0
+		},
+		{
+			115792,
+			16608,
+			10080,
+			0
+		},
 	};
 	
 	private L2Character _actualVictim;
-	private long _lastAttackTime = 0;
-	private final List<L2Npc> _minions = new ArrayList<>(5);
+	private long _LastAttackVsBaiumTime = 0;
+	private final List<L2Npc> _Minions = new ArrayList<>(5);
 	
 	public Baium(String name, String descr)
 	{
@@ -123,17 +133,17 @@ public class Baium extends AbstractNpcAI
 			baium.setRunning();
 			
 			// start monitoring baium's inactivity
-			_lastAttackTime = System.currentTimeMillis();
+			_LastAttackVsBaiumTime = System.currentTimeMillis();
 			startQuestTimer("baium_despawn", 60000, baium, null, true);
 			startQuestTimer("skill_range", 2000, baium, null, true);
 			
 			// Spawns angels
-			for (SpawnLocation loc : ANGEL_LOCATION)
+			for (int[] element : ANGEL_LOCATION)
 			{
-				L2Npc angel = addSpawn(ARCHANGEL, loc.getX(), loc.getY(), loc.getZ(), loc.getHeading(), false, 0, true);
+				L2Npc angel = addSpawn(ARCHANGEL, element[0], element[1], element[2], element[3], false, 0, true);
 				((L2Attackable) angel).setIsRaidMinion(true);
 				angel.setRunning();
-				_minions.add(angel);
+				_Minions.add(angel);
 			}
 			
 			// Angels AI
@@ -162,10 +172,7 @@ public class Baium extends AbstractNpcAI
 				{
 					// If player is far of Baium, teleport him back.
 					if (!Util.checkIfInShortRadius(300, player, npc, true))
-					{
-						BAIUM_LAIR.allowPlayerEntry(player, 10);
 						player.teleToLocation(115929, 17349, 10077, 0);
-					}
 					
 					// 60% to die.
 					if (Rnd.get(100) < 60)
@@ -178,12 +185,12 @@ public class Baium extends AbstractNpcAI
 				npc.broadcastPacket(new SocialAction(npc, 1));
 				
 				// Spawn angels
-				for (SpawnLocation loc : ANGEL_LOCATION)
+				for (int[] element : ANGEL_LOCATION)
 				{
-					L2Npc angel = addSpawn(ARCHANGEL, loc.getX(), loc.getY(), loc.getZ(), loc.getHeading(), false, 0, true);
+					L2Npc angel = addSpawn(ARCHANGEL, element[0], element[1], element[2], element[3], false, 0, true);
 					((L2Attackable) angel).setIsRaidMinion(true);
 					angel.setRunning();
-					_minions.add(angel);
+					_Minions.add(angel);
 				}
 				
 				// Angels AI
@@ -195,7 +202,7 @@ public class Baium extends AbstractNpcAI
 				npc.setRunning();
 				
 				// Start monitoring baium's inactivity and activate the AI
-				_lastAttackTime = System.currentTimeMillis();
+				_LastAttackVsBaiumTime = System.currentTimeMillis();
 				
 				startQuestTimer("baium_despawn", 60000, npc, null, true);
 				startQuestTimer("skill_range", 2000, npc, null, true);
@@ -204,30 +211,33 @@ public class Baium extends AbstractNpcAI
 			// also check if the players are cheating, having pulled Baium outside his zone...
 			else if (event.equalsIgnoreCase("baium_despawn"))
 			{
-				if (_lastAttackTime + 1800000 < System.currentTimeMillis())
+				if (_LastAttackVsBaiumTime + 1800000 < System.currentTimeMillis())
 				{
 					// despawn the live-baium
 					npc.deleteMe();
 					
 					// Unspawn angels
-					for (L2Npc minion : _minions)
+					for (L2Npc minion : _Minions)
 					{
-						minion.getSpawn().stopRespawn();
-						minion.deleteMe();
+						if (minion != null)
+						{
+							minion.getSpawn().stopRespawn();
+							minion.deleteMe();
+						}
 					}
-					_minions.clear();
+					_Minions.clear();
 					
 					addSpawn(STONE_BAIUM, 116033, 17447, 10104, 40188, false, 0, false); // spawn stone-baium
 					GrandBossManager.getInstance().setBossStatus(LIVE_BAIUM, ASLEEP); // Baium isn't awaken anymore
-					BAIUM_LAIR.oustAllPlayers();
+					_baiumLair.oustAllPlayers();
 					cancelQuestTimer("baium_despawn", npc, null);
 				}
-				else if ((_lastAttackTime + 300000 < System.currentTimeMillis()) && (npc.getCurrentHp() / npc.getMaxHp() < 0.75))
+				else if ((_LastAttackVsBaiumTime + 300000 < System.currentTimeMillis()) && (npc.getCurrentHp() / npc.getMaxHp() < 0.75))
 				{
 					npc.setTarget(npc);
 					npc.doCast(SkillTable.getInstance().getInfo(4135, 1));
 				}
-				else if (!BAIUM_LAIR.isInsideZone(npc))
+				else if (!_baiumLair.isInsideZone(npc))
 					npc.teleToLocation(116033, 17447, 10104, 0);
 			}
 		}
@@ -240,9 +250,12 @@ public class Baium extends AbstractNpcAI
 		{
 			boolean updateTarget = false; // Update or no the target
 			
-			for (L2Npc minion : _minions)
+			for (L2Npc minion : _Minions)
 			{
 				L2Attackable angel = ((L2Attackable) minion);
+				if (angel == null)
+					continue;
+				
 				L2Character victim = angel.getMostHated();
 				
 				if (Rnd.get(100) < 10) // Chaos time
@@ -283,25 +296,30 @@ public class Baium extends AbstractNpcAI
 		
 		if (GrandBossManager.getInstance().getBossStatus(LIVE_BAIUM) == ASLEEP)
 		{
-			GrandBossManager.getInstance().setBossStatus(LIVE_BAIUM, AWAKE);
-			
-			final L2Npc baium = addSpawn(LIVE_BAIUM, npc, false, 0, false);
-			baium.setIsInvul(true);
-			
-			GrandBossManager.getInstance().addBoss((L2GrandBossInstance) baium);
-			
-			// First animation
-			baium.broadcastPacket(new SocialAction(baium, 2));
-			baium.broadcastPacket(new Earthquake(baium.getX(), baium.getY(), baium.getZ(), 40, 10));
-			
-			// Second animation, waker sacrifice, followed by angels spawn, third animation and finally movement.
-			startQuestTimer("baium_neck", 13000, baium, null, false);
-			startQuestTimer("sacrifice_waker", 24000, baium, player, false);
-			startQuestTimer("baium_roar", 28000, baium, null, false);
-			startQuestTimer("baium_move", 35000, baium, null, false);
-			
-			// Delete the statue.
-			npc.deleteMe();
+			if (_baiumLair.isPlayerAllowed(player))
+			{
+				GrandBossManager.getInstance().setBossStatus(LIVE_BAIUM, AWAKE);
+				
+				final L2Npc baium = addSpawn(LIVE_BAIUM, npc, false, 0, false);
+				baium.setIsInvul(true);
+				
+				GrandBossManager.getInstance().addBoss((L2GrandBossInstance) baium);
+				
+				// First animation
+				baium.broadcastPacket(new SocialAction(baium, 2));
+				baium.broadcastPacket(new Earthquake(baium.getX(), baium.getY(), baium.getZ(), 40, 10));
+				
+				// Second animation, waker sacrifice, followed by angels spawn, third animation and finally movement.
+				startQuestTimer("baium_neck", 13000, baium, null, false);
+				startQuestTimer("sacrifice_waker", 24000, baium, player, false);
+				startQuestTimer("baium_roar", 28000, baium, null, false);
+				startQuestTimer("baium_move", 35000, baium, null, false);
+				
+				// Delete the statue.
+				npc.deleteMe();
+			}
+			else
+				htmltext = "Conditions are not right to wake up Baium";
 		}
 		return htmltext;
 	}
@@ -316,7 +334,7 @@ public class Baium extends AbstractNpcAI
 	@Override
 	public String onAttack(L2Npc npc, L2PcInstance attacker, int damage, boolean isPet)
 	{
-		if (!BAIUM_LAIR.isInsideZone(attacker))
+		if (!_baiumLair.isInsideZone(attacker))
 		{
 			attacker.doDie(attacker);
 			return null;
@@ -337,7 +355,7 @@ public class Baium extends AbstractNpcAI
 				}
 			}
 			// update a variable with the last action against baium
-			_lastAttackTime = System.currentTimeMillis();
+			_LastAttackVsBaiumTime = System.currentTimeMillis();
 		}
 		return super.onAttack(npc, attacker, damage, isPet);
 	}
@@ -362,12 +380,15 @@ public class Baium extends AbstractNpcAI
 		GrandBossManager.getInstance().setStatsSet(LIVE_BAIUM, info);
 		
 		// Unspawn angels.
-		for (L2Npc minion : _minions)
+		for (L2Npc minion : _Minions)
 		{
-			minion.getSpawn().stopRespawn();
-			minion.deleteMe();
+			if (minion != null)
+			{
+				minion.getSpawn().stopRespawn();
+				minion.deleteMe();
+			}
 		}
-		_minions.clear();
+		_Minions.clear();
 		
 		// Clean Baium AI
 		cancelQuestTimer("skill_range", npc, null);
@@ -413,8 +434,9 @@ public class Baium extends AbstractNpcAI
 		{
 			if (npcId == LIVE_BAIUM) // Case of Baium. Angels should never be without target.
 			{
-				for (L2Npc minion : _minions)
-					result.add(minion);
+				for (L2Npc minion : _Minions)
+					if (minion != null)
+						result.add(minion);
 			}
 		}
 		
@@ -457,7 +479,7 @@ public class Baium extends AbstractNpcAI
 	 * @param npc baium
 	 * @return a usable skillId
 	 */
-	private static int getRandomSkill(L2Npc npc)
+	private int getRandomSkill(L2Npc npc)
 	{
 		// Baium's selfheal. It happens exceptionaly.
 		if (npc.getCurrentHp() / npc.getMaxHp() < 0.1)

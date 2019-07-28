@@ -115,17 +115,17 @@ public final class GeoDriverBlock extends GeoData
 							case GeoStructure.TYPE_FLAT_L2D:
 								_blocks[blockX + ix][blockY + iy] = new FlatBlock(buffer);
 								break;
-							
+								
 							case GeoStructure.TYPE_COMPLEX_L2J:
 							case GeoStructure.TYPE_COMPLEX_L2D:
 								_blocks[blockX + ix][blockY + iy] = new ComplexBlock(buffer);
 								break;
-							
+								
 							case GeoStructure.TYPE_MULTILAYER_L2J:
 							case GeoStructure.TYPE_MULTILAYER_L2D:
 								_blocks[blockX + ix][blockY + iy] = new MultilayerBlock(buffer);
 								break;
-							
+								
 							default:
 								throw new IllegalArgumentException("Unknown block type: " + type);
 						}
@@ -141,11 +141,11 @@ public final class GeoDriverBlock extends GeoData
 							case GeoStructure.TYPE_FLAT_L2J_L2OFF:
 								_blocks[blockX + ix][blockY + iy] = new FlatBlock(buffer);
 								break;
-							
+								
 							case GeoStructure.TYPE_COMPLEX_L2OFF:
 								_blocks[blockX + ix][blockY + iy] = new ComplexBlock(buffer);
 								break;
-							
+								
 							default:
 								_blocks[blockX + ix][blockY + iy] = new MultilayerBlock(buffer);
 								break;

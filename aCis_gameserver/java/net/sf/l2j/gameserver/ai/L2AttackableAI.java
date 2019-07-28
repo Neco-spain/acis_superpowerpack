@@ -1,23 +1,10 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.ai;
 
 import java.util.List;
 import java.util.concurrent.Future;
 
 import net.sf.l2j.Config;
+import net.sf.l2j.gameserver.GameTimeController;
 import net.sf.l2j.gameserver.ThreadPoolManager;
 import net.sf.l2j.gameserver.geoengine.PathFinding;
 import net.sf.l2j.gameserver.instancemanager.DimensionalRiftManager;
@@ -53,13 +40,13 @@ import net.sf.l2j.util.Rnd;
 public class L2AttackableAI extends L2CharacterAI implements Runnable
 {
 	protected static final int RANDOM_WALK_RATE = 30;
-	protected static final int MAX_ATTACK_TIMEOUT = 120000; // 2min
+	protected static final int MAX_ATTACK_TIMEOUT = 1200; // 2min
 	
 	/** The L2Attackable AI task executed every 1s (call onEvtThink method) */
 	protected Future<?> _aiTask;
 	
 	/** The delay after wich the attacked is stopped */
-	protected long _attackTimeout;
+	protected int _attackTimeout;
 	
 	/** The L2Attackable aggro counter */
 	protected int _globalAggro;
@@ -82,7 +69,7 @@ public class L2AttackableAI extends L2CharacterAI implements Runnable
 		// Attach the AI template to this NPC template
 		_skillrender = getActiveChar().getTemplate();
 		
-		_attackTimeout = Long.MAX_VALUE;
+		_attackTimeout = Integer.MAX_VALUE;
 		_globalAggro = -10; // 10 seconds timeout of ATTACK after respawn
 	}
 	
@@ -303,7 +290,7 @@ public class L2AttackableAI extends L2CharacterAI implements Runnable
 	protected void onIntentionAttack(L2Character target)
 	{
 		// Calculate the attack timeout
-		_attackTimeout = System.currentTimeMillis() + MAX_ATTACK_TIMEOUT;
+		_attackTimeout = MAX_ATTACK_TIMEOUT + GameTimeController.getInstance().getGameTicks();
 		
 		// Buffs
 		if (Rnd.get(RANDOM_WALK_RATE) == 0)
@@ -518,7 +505,7 @@ public class L2AttackableAI extends L2CharacterAI implements Runnable
 		L2Character attackTarget = (L2Character) getTarget();
 		
 		// If target doesn't exist, is dead or if timeout is expired (non-aggro mobs or mobs which are too far stop to attack)
-		if (attackTarget == null || attackTarget.isAlikeDead() || (_attackTimeout < System.currentTimeMillis() && (!npc.isAggressive() || Math.sqrt(npc.getPlanDistanceSq(attackTarget.getX(), attackTarget.getY())) > npc.getAggroRange() * 2)))
+		if (attackTarget == null || attackTarget.isAlikeDead() || (_attackTimeout < GameTimeController.getInstance().getGameTicks() && (!npc.isAggressive() || Math.sqrt(npc.getPlanDistanceSq(attackTarget.getX(), attackTarget.getY())) > npc.getAggroRange() * 2)))
 		{
 			// Stop hating this target after the attack timeout or if target is dead
 			if (attackTarget != null)
@@ -1496,7 +1483,7 @@ public class L2AttackableAI extends L2CharacterAI implements Runnable
 		final L2Attackable me = getActiveChar();
 		
 		// Calculate the attack timeout
-		_attackTimeout = System.currentTimeMillis() + MAX_ATTACK_TIMEOUT;
+		_attackTimeout = MAX_ATTACK_TIMEOUT + GameTimeController.getInstance().getGameTicks();
 		
 		// Set the _globalAggro to 0 to permit attack even just after spawn
 		if (_globalAggro < 0)
@@ -1576,7 +1563,7 @@ public class L2AttackableAI extends L2CharacterAI implements Runnable
 	protected void onIntentionActive()
 	{
 		// Cancel attack timeout
-		_attackTimeout = Long.MAX_VALUE;
+		_attackTimeout = Integer.MAX_VALUE;
 		
 		super.onIntentionActive();
 	}

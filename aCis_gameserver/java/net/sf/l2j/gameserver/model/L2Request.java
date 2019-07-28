@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.model;
 
 import net.sf.l2j.gameserver.ThreadPoolManager;
@@ -30,7 +16,8 @@ public class L2Request
 	
 	protected L2PcInstance _player;
 	protected L2PcInstance _partner;
-	
+	protected boolean _isRequestor;
+	protected boolean _isAnswerer;
 	protected L2GameClientPacket _requestPacket;
 	
 	public L2Request(L2PcInstance player)
@@ -42,6 +29,8 @@ public class L2Request
 	{
 		_partner = null;
 		_requestPacket = null;
+		_isRequestor = false;
+		_isAnswerer = false;
 	}
 	
 	/**
@@ -115,6 +104,8 @@ public class L2Request
 	
 	private void setOnRequestTimer(boolean isRequestor)
 	{
+		_isRequestor = isRequestor ? true : false;
+		_isAnswerer = isRequestor ? false : true;
 		ThreadPoolManager.getInstance().scheduleGeneral(new Runnable()
 		{
 			@Override

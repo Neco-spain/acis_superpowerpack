@@ -1,18 +1,6 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.model.olympiad;
+
+import Extensions.Events.Phoenix.EventManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -153,6 +141,12 @@ public class OlympiadManager
 			return false;
 		}
 		
+		if (EventManager.getInstance().players.contains(player))
+		{
+			player.sendMessage("You can't join olympiad while participating in an Event.");
+			return false;
+		}
+		
 		switch (type)
 		{
 			case CLASSED:
@@ -269,7 +263,7 @@ public class OlympiadManager
 			return false;
 		}
 		
-		if (player.getInventoryLimit() * 0.8 <= player.getInventory().getSize())
+		if (!player.isInventoryUnder80(true))
 		{
 			player.sendPacket(SystemMessageId.SINCE_80_PERCENT_OR_MORE_OF_YOUR_INVENTORY_SLOTS_ARE_FULL_YOU_CANNOT_PARTICIPATE_IN_THE_OLYMPIAD);
 			return false;
@@ -300,7 +294,7 @@ public class OlympiadManager
 		final int points = Olympiad.getInstance().getNoblePoints(player.getObjectId());
 		if (points <= 0)
 		{
-			final NpcHtmlMessage message = new NpcHtmlMessage(0);
+			NpcHtmlMessage message = new NpcHtmlMessage(0);
 			message.setFile("data/html/olympiad/noble_nopoints1.htm");
 			message.replace("%objectId%", player.getTargetId());
 			player.sendPacket(message);

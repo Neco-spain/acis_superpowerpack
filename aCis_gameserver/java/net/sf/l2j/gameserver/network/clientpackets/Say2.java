@@ -1,18 +1,8 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.network.clientpackets;
+
+import Extensions.Events.RandomFight;
+import Extensions.Events.Phoenix.EventManager;
+import Extensions.Vip.VIPEngine;
 
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
@@ -21,15 +11,25 @@ import java.util.logging.Logger;
 import net.sf.l2j.Config;
 import net.sf.l2j.gameserver.handler.ChatHandler;
 import net.sf.l2j.gameserver.handler.IChatHandler;
+import net.sf.l2j.gameserver.model.L2World;
 import net.sf.l2j.gameserver.model.actor.instance.L2PcInstance;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.serverpackets.ActionFailed;
+import net.sf.l2j.gameserver.network.serverpackets.CreatureSay;
+import net.sf.l2j.gameserver.network.serverpackets.SocialAction;
 import net.sf.l2j.gameserver.util.IllegalPlayerAction;
 import net.sf.l2j.gameserver.util.Util;
 
 public final class Say2 extends L2GameClientPacket
 {
+	private static boolean _chatDisabled = false;
 	private static Logger _logChat = Logger.getLogger("chat");
+	private static String[] anticfg =
+	{
+		"///cfg",
+		"//cfg",
+		"/cfg",
+	};
 	
 	public final static int ALL = 0;
 	public final static int SHOUT = 1; // !
@@ -49,7 +49,7 @@ public final class Say2 extends L2GameClientPacket
 	public final static int PARTYROOM_COMMANDER = 15; // (Yellow)
 	public final static int PARTYROOM_ALL = 16; // (Red)
 	public final static int HERO_VOICE = 17;
-	public final static int CRITICAL_ANNOUNCE = 18;
+	public final static int AIO_VIP_VOICE = 18;
 	
 	private final static String[] CHAT_NAMES =
 	{
@@ -71,7 +71,7 @@ public final class Say2 extends L2GameClientPacket
 		"PARTYROOM_COMMANDER",
 		"PARTYROOM_ALL",
 		"HERO_VOICE",
-		"CRITICAL_ANNOUNCEMENT"
+		"AIO_VIP_VOICE"
 	};
 	
 	private static final String[] WALKER_COMMAND_LIST =
@@ -128,15 +128,39 @@ public final class Say2 extends L2GameClientPacket
 	@Override
 	protected void runImpl()
 	{
-		final L2PcInstance activeChar = getClient().getActiveChar();
+		L2PcInstance activeChar = getClient().getActiveChar();
 		if (activeChar == null)
 			return;
+		
+		if (isChatDisabled() && !activeChar.isGM())
+		{
+			activeChar.sendPacket(SystemMessageId.GM_NOTICE_CHAT_DISABLED);
+			return;
+		}
 		
 		if (_type < 0 || _type >= CHAT_NAMES.length)
 		{
 			_log.warning("Say2: Invalid type: " + _type + " Player : " + activeChar.getName() + " text: " + _text);
 			activeChar.sendPacket(ActionFailed.STATIC_PACKET);
 			activeChar.logout();
+			return;
+		}
+		
+		if ((activeChar.isDead()) && (Config.DISABLE_DEAD_CHAT))
+		{
+			activeChar.sendMessage("You cant talk while you are dead.");
+			return;
+		}
+		
+		if ((activeChar.isInOlympiadMode()) && (Config.DISABLE_OLYMPIAD_CHAT))
+		{
+			activeChar.sendMessage("You cant talk in olympiad.");
+			return;
+		}
+		
+		if (activeChar.isSubmitingPin())
+		{
+			activeChar.sendMessage("Unable to do any action while PIN is not submitted");
 			return;
 		}
 		
@@ -148,8 +172,38 @@ public final class Say2 extends L2GameClientPacket
 			return;
 		}
 		
+		if (Config.ENABLE_SAY_SOCIAL_ACTIONS && !activeChar.isAlikeDead() && !activeChar.isDead())
+		{
+			if ((_text.equalsIgnoreCase("hello") || _text.equalsIgnoreCase("hey") || _text.equalsIgnoreCase("aloha") || _text.equalsIgnoreCase("alo") || _text.equalsIgnoreCase("ciao") || _text.equalsIgnoreCase("hi")) && (!activeChar.isRunning() || !activeChar.isAttackingNow() || !activeChar.isCastingNow()))
+				activeChar.broadcastPacket(new SocialAction(activeChar, 2));
+			
+			if ((_text.equalsIgnoreCase("lol") || _text.equalsIgnoreCase("haha") || _text.equalsIgnoreCase("xaxa") || _text.equalsIgnoreCase("ghgh") || _text.equalsIgnoreCase("jaja")) && (!activeChar.isRunning() || !activeChar.isAttackingNow() || !activeChar.isCastingNow()))
+				activeChar.broadcastPacket(new SocialAction(activeChar, 10));
+			
+			if ((_text.equalsIgnoreCase("yes") || _text.equalsIgnoreCase("si") || _text.equalsIgnoreCase("yep")) && (!activeChar.isRunning() || !activeChar.isAttackingNow() || !activeChar.isCastingNow()))
+				activeChar.broadcastPacket(new SocialAction(activeChar, 6));
+			
+			if ((_text.equalsIgnoreCase("no") || _text.equalsIgnoreCase("nop") || _text.equalsIgnoreCase("nope")) && (!activeChar.isRunning() || !activeChar.isAttackingNow() || !activeChar.isCastingNow()))
+				activeChar.broadcastPacket(new SocialAction(activeChar, 5));
+			
+		}
+		
 		if (_text.length() >= 100)
 			return;
+		
+		if (Config.ALLOW_AIO_AND_VIP_CHAT && (activeChar.isAio() || VIPEngine.getInstance().isVip(activeChar)))
+		{
+			if (_text.startsWith(">"))
+				for (L2PcInstance p : L2World.getInstance().getAllPlayers().values())
+				{
+					p.sendPacket(new CreatureSay(0, Say2.AIO_VIP_VOICE, activeChar.getName(), _text));
+					return;
+				}
+			else
+			{
+				activeChar.sendMessage("This chat can be used only by VIP & AiO characters of the server.");
+			}
+		}
 		
 		if (Config.L2WALKER_PROTECTION && _type == TELL && checkBot(_text))
 		{
@@ -168,6 +222,24 @@ public final class Say2 extends L2GameClientPacket
 		{
 			activeChar.sendPacket(SystemMessageId.CHATTING_PROHIBITED);
 			return;
+		}
+		
+		checkRandomFight(this._text, activeChar);
+		if ((this._text.equalsIgnoreCase(".join_rf")) || (this._text.equalsIgnoreCase(".leave_rf")))
+		{
+			return;
+		}
+		
+		if (_type == TELL || _type == SHOUT || _type == TRADE || _type == HERO_VOICE || _type == PARTY)
+		{
+			for (int k = 0; k < anticfg.length; k++)
+			{
+				if (_text.equalsIgnoreCase(anticfg[k]))
+				{
+					activeChar.sendMessage("You can't use word: " + anticfg[k]);
+					return;
+				}
+			}
 		}
 		
 		if (_type == PETITION_PLAYER && activeChar.isGM())
@@ -196,6 +268,12 @@ public final class Say2 extends L2GameClientPacket
 		
 		_text = _text.replaceAll("\\\\n", "");
 		
+		if (EventManager.getInstance().isRegistered(activeChar) && !EventManager.getInstance().getCurrentEvent().onSay(_type, activeChar, _text))
+		{
+			activeChar.sendMessage("You cannot talk right now.");
+			return;
+		}
+		
 		IChatHandler handler = ChatHandler.getInstance().getChatHandler(_type);
 		if (handler != null)
 			handler.handleChat(_type, activeChar, _target, _text);
@@ -211,6 +289,65 @@ public final class Say2 extends L2GameClientPacket
 				return true;
 		}
 		return false;
+	}
+	
+	/**
+	 * @return Returns the chatDisabled.
+	 */
+	public static boolean isChatDisabled()
+	{
+		return _chatDisabled;
+	}
+	
+	/**
+	 * @param chatDisabled The chatDisabled to set.
+	 */
+	public static void setIsChatDisabled(boolean chatDisabled)
+	{
+		_chatDisabled = chatDisabled;
+	}
+	
+	static void checkRandomFight(String text, L2PcInstance player)
+	{
+		if (text.equalsIgnoreCase(".join_rf"))
+		{
+			if (RandomFight.players.contains(player))
+			{
+				player.sendMessage("You have already registed to the event.");
+				return;
+			}
+			if (RandomFight.state == RandomFight.State.INACTIVE)
+			{
+				return;
+			}
+			if (RandomFight.state != RandomFight.State.REGISTER)
+			{
+				player.sendMessage("Event has already started.");
+				return;
+			}
+			RandomFight.players.add(player);
+			player.sendMessage("You registed to the event!!");
+			return;
+		}
+		if (text.equalsIgnoreCase(".leave_rf"))
+		{
+			if (!RandomFight.players.contains(player))
+			{
+				player.sendMessage("You haven't registed to the event.");
+				return;
+			}
+			if (RandomFight.state == RandomFight.State.INACTIVE)
+			{
+				return;
+			}
+			if (RandomFight.state != RandomFight.State.REGISTER)
+			{
+				player.sendMessage("Event has already started.");
+				return;
+			}
+			RandomFight.players.remove(player);
+			player.sendMessage("You unregisted from the  event!!");
+		}
 	}
 	
 	@Override

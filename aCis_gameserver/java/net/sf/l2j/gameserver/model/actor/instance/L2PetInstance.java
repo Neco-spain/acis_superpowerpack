@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.model.actor.instance;
 
 import java.sql.Connection;
@@ -35,6 +21,7 @@ import net.sf.l2j.gameserver.handler.IItemHandler;
 import net.sf.l2j.gameserver.handler.ItemHandler;
 import net.sf.l2j.gameserver.idfactory.IdFactory;
 import net.sf.l2j.gameserver.instancemanager.CursedWeaponsManager;
+import net.sf.l2j.gameserver.instancemanager.ItemsOnGroundManager;
 import net.sf.l2j.gameserver.model.L2Object;
 import net.sf.l2j.gameserver.model.L2Party;
 import net.sf.l2j.gameserver.model.L2PetData;
@@ -63,7 +50,6 @@ import net.sf.l2j.gameserver.network.serverpackets.StatusUpdate;
 import net.sf.l2j.gameserver.network.serverpackets.StopMove;
 import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
 import net.sf.l2j.gameserver.taskmanager.DecayTaskManager;
-import net.sf.l2j.gameserver.taskmanager.ItemsOnGroundTaskManager;
 import net.sf.l2j.gameserver.util.Util;
 import net.sf.l2j.util.Rnd;
 
@@ -488,8 +474,8 @@ public class L2PetInstance extends L2Summon
 			else
 				target.pickupMe(this);
 			
-			// Item must be removed from ItemsOnGroundManager if it is active.
-			ItemsOnGroundTaskManager.getInstance().remove(target);
+			if (Config.SAVE_DROPPED_ITEM) // item must be removed from ItemsOnGroundManager if is active
+				ItemsOnGroundManager.getInstance().removeObject(target);
 		}
 		
 		// Auto use herbs - pick up
@@ -574,7 +560,7 @@ public class L2PetInstance extends L2Summon
 		
 		stopFeed();
 		getOwner().sendPacket(SystemMessageId.MAKE_SURE_YOU_RESSURECT_YOUR_PET_WITHIN_20_MINUTES);
-		DecayTaskManager.getInstance().add(this, 1200);
+		DecayTaskManager.getInstance().add(this, 1200000);
 		
 		// Dont decrease exp if killed in duel or arena
 		L2PcInstance owner = getOwner();

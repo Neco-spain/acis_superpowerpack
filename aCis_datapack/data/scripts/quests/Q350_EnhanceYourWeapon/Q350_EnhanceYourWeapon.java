@@ -1,15 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package quests.Q350_EnhanceYourWeapon;
 
 import net.sf.l2j.gameserver.datatables.SoulCrystalsTable;
@@ -180,8 +168,9 @@ public class Q350_EnhanceYourWeapon extends Quest
 	 * @param mob : The mob to make checks on.
 	 * @param npcInfo : The mob's leveling informations.
 	 * @param chance : Input variable used to determine keep/stage/break of the crystal.
+	 * @return Returns true only, when crystal is staged or broken (aka any type of crystal change is made), else returns false.
 	 */
-	private static void tryToStageCrystal(L2PcInstance player, L2Attackable mob, LevelingInfo npcInfo, int chance)
+	private void tryToStageCrystal(L2PcInstance player, L2Attackable mob, LevelingInfo npcInfo, int chance)
 	{
 		SoulCrystalData crystalData = null;
 		ItemInstance crystalItem = null;
@@ -265,7 +254,7 @@ public class Q350_EnhanceYourWeapon extends Quest
 	 * @param scd : SoulCrystalData of to take information form.
 	 * @param stage : Switch to determine success or fail.
 	 */
-	private static void exchangeCrystal(L2PcInstance player, SoulCrystalData scd, boolean stage)
+	private void exchangeCrystal(L2PcInstance player, SoulCrystalData scd, boolean stage)
 	{
 		QuestState st = player.getQuestState(qn);
 		

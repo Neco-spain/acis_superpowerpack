@@ -1,32 +1,17 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.handler.admincommandhandlers;
 
 import java.util.StringTokenizer;
 
-import net.sf.l2j.commons.lang.StringUtil;
 import net.sf.l2j.gameserver.datatables.BookmarkTable;
 import net.sf.l2j.gameserver.handler.IAdminCommandHandler;
 import net.sf.l2j.gameserver.model.L2Bookmark;
 import net.sf.l2j.gameserver.model.actor.instance.L2PcInstance;
 import net.sf.l2j.gameserver.network.serverpackets.NpcHtmlMessage;
+import net.sf.l2j.util.StringUtil;
 
 /**
  * This class handles bookmarks (stored locations for GMs use).<br>
  * A bookmark is registered using //bk name. The book itself is called with //bk without parameter.
- * @author Tryskell
  */
 public class AdminBookmark implements IAdminCommandHandler
 {
@@ -117,13 +102,13 @@ public class AdminBookmark implements IAdminCommandHandler
 		final L2Bookmark[] bookmarks = BookmarkTable.getInstance().getBookmarks(objId);
 		
 		// Load static Htm.
-		final NpcHtmlMessage html = new NpcHtmlMessage(0);
-		html.setFile("data/html/admin/bk.htm");
+		NpcHtmlMessage adminReply = new NpcHtmlMessage(0);
+		adminReply.setFile("data/html/admin/bk.htm");
 		
 		if (bookmarks == null)
 		{
-			html.replace("%locs%", "<tr><td>No bookmarks are currently registered.</td></tr>");
-			activeChar.sendPacket(html);
+			adminReply.replace("%locs%", "<tr><td>No bookmarks are currently registered.</td></tr>");
+			activeChar.sendPacket(adminReply);
 			return;
 		}
 		
@@ -138,36 +123,47 @@ public class AdminBookmark implements IAdminCommandHandler
 		int end = Math.min(((page - 1) * PAGE_LIMIT) + PAGE_LIMIT, bookmarks.length);
 		
 		// Generate data.
-		final StringBuilder sb = new StringBuilder(2000);
+		final StringBuilder replyMSG = new StringBuilder(500 + bookmarks.length * 200);
+		
+		String name, x, y, z;
 		
 		for (int i = start; i < end; i++)
 		{
-			final L2Bookmark bk = bookmarks[i];
+			L2Bookmark bk = bookmarks[i];
 			if (bk != null)
 			{
-				final String name = bk.getName();
-				final int x = bk.getX();
-				final int y = bk.getY();
-				final int z = bk.getZ();
+				name = bk.getName();
+				x = String.valueOf(bk.getX());
+				y = String.valueOf(bk.getY());
+				z = String.valueOf(bk.getZ());
 				
-				StringUtil.append(sb, "<tr><td><a action=\"bypass -h admin_move_to ", x, " ", y, " ", z, "\">", name, " (", x, " ", y, " ", z, ")", "</a></td><td><a action=\"bypass -h admin_delbk ", name, "\">Remove</a></td></tr>");
+				StringUtil.append(replyMSG, "<tr><td><a action=\"bypass -h admin_move_to ", x, " ", y, " ", z, "\">", name, " (", x, " ", y, " ", z, ")", "</a></td><td><a action=\"bypass -h admin_delbk ", name, "\">Remove</a></td></tr>");
 			}
 		}
 		
 		// End of table, open a new table for pages system.
-		sb.append("</table><br><table width=270 bgcolor=444444><tr><td>Page: ");
+		replyMSG.append("</table><br><table width=270 bgcolor=444444><tr><td>Page: ");
 		for (int x1 = 0; x1 < max; x1++)
 		{
 			int pagenr = x1 + 1;
 			if (page == pagenr)
-				StringUtil.append(sb, pagenr, "|");
+			{
+				replyMSG.append(pagenr);
+				replyMSG.append("|");
+			}
 			else
-				StringUtil.append(sb, "<a action=\"bypass -h admin_bkpage ", x1 + 1, "\">", pagenr, "</a>|");
+			{
+				replyMSG.append("<a action=\"bypass -h admin_bkpage ");
+				replyMSG.append(x1 + 1);
+				replyMSG.append("\">");
+				replyMSG.append(pagenr);
+				replyMSG.append("</a>|");
+			}
 		}
-		sb.append("</td></tr>");
+		replyMSG.append("</td></tr>");
 		
-		html.replace("%locs%", sb.toString());
-		activeChar.sendPacket(html);
+		adminReply.replace("%locs%", replyMSG.toString());
+		activeChar.sendPacket(adminReply);
 	}
 	
 	@Override

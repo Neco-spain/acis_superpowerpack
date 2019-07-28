@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.model;
 
 import java.util.ArrayList;
@@ -22,6 +8,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import net.sf.l2j.gameserver.GameTimeController;
 import net.sf.l2j.gameserver.ThreadPoolManager;
 import net.sf.l2j.gameserver.model.actor.L2Character;
 import net.sf.l2j.gameserver.model.actor.instance.L2PcInstance;
@@ -63,7 +50,7 @@ public abstract class L2Effect
 	private EffectState _state; // the current state
 	
 	private final int _period; // period, seconds
-	protected long _periodStartTime;
+	protected int _periodStartTicks;
 	protected int _periodFirstTime;
 	
 	private final EffectTemplate _template;
@@ -87,7 +74,7 @@ public abstract class L2Effect
 			try
 			{
 				_periodFirstTime = 0;
-				_periodStartTime = System.currentTimeMillis();
+				_periodStartTicks = GameTimeController.getInstance().getGameTicks();
 				scheduleEffect();
 			}
 			catch (Exception e)
@@ -144,7 +131,7 @@ public abstract class L2Effect
 		_abnormalEffect = template.abnormalEffect;
 		_stackType = template.stackType;
 		_stackOrder = template.stackOrder;
-		_periodStartTime = System.currentTimeMillis();
+		_periodStartTicks = GameTimeController.getInstance().getGameTicks();
 		_periodFirstTime = 0;
 		_icon = template.icon;
 		_effectPower = template.effectPower;
@@ -171,7 +158,7 @@ public abstract class L2Effect
 	public void setFirstTime(int newFirstTime)
 	{
 		_periodFirstTime = Math.min(newFirstTime, _period);
-		_periodStartTime = System.currentTimeMillis() - _periodFirstTime * 1000;
+		_periodStartTicks -= _periodFirstTime * GameTimeController.TICKS_PER_SECOND;
 	}
 	
 	public boolean getShowIcon()
@@ -186,7 +173,7 @@ public abstract class L2Effect
 	
 	public int getTime()
 	{
-		return (int) ((System.currentTimeMillis() - _periodStartTime) / 1000);
+		return (GameTimeController.getInstance().getGameTicks() - _periodStartTicks) / GameTimeController.TICKS_PER_SECOND;
 	}
 	
 	/**
@@ -506,6 +493,11 @@ public abstract class L2Effect
 	public int getLevel()
 	{
 		return getSkill().getLevel();
+	}
+	
+	public int getPeriodStartTicks()
+	{
+		return _periodStartTicks;
 	}
 	
 	public EffectTemplate getEffectTemplate()

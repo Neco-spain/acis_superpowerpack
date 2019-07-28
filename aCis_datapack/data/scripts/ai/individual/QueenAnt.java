@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package ai.individual;
 
 import ai.AbstractNpcAI;
@@ -45,7 +31,7 @@ import net.sf.l2j.util.Rnd;
  */
 public class QueenAnt extends AbstractNpcAI
 {
-	private static final L2BossZone AQ_LAIR = GrandBossManager.getInstance().getZoneById(110012);
+	private static L2BossZone _antQueenLair = GrandBossManager.getInstance().getZoneById(110012);
 	
 	private static final int QUEEN = 29001;
 	private static final int LARVA = 29002;
@@ -110,7 +96,7 @@ public class QueenAnt extends AbstractNpcAI
 			int heading = info.getInteger("heading");
 			int hp = info.getInteger("currentHP");
 			int mp = info.getInteger("currentMP");
-			if (!AQ_LAIR.isInsideZone(loc_x, loc_y, loc_z))
+			if (!_antQueenLair.isInsideZone(loc_x, loc_y, loc_z))
 			{
 				loc_x = QUEEN_X;
 				loc_y = QUEEN_Y;
@@ -126,11 +112,11 @@ public class QueenAnt extends AbstractNpcAI
 	private void spawnBoss(L2GrandBossInstance npc)
 	{
 		if (Rnd.get(100) < 33)
-			AQ_LAIR.movePlayersTo(-19480, 187344, -5600);
+			_antQueenLair.movePlayersTo(-19480, 187344, -5600);
 		else if (Rnd.get(100) < 50)
-			AQ_LAIR.movePlayersTo(-17928, 180912, -5520);
+			_antQueenLair.movePlayersTo(-17928, 180912, -5520);
 		else
-			AQ_LAIR.movePlayersTo(-23808, 182368, -5600);
+			_antQueenLair.movePlayersTo(-23808, 182368, -5600);
 		
 		GrandBossManager.getInstance().addBoss(npc);
 		startQuestTimer("action", 10000, npc, null, true);

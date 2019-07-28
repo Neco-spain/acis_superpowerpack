@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.network.clientpackets;
 
 import net.sf.l2j.gameserver.model.actor.instance.L2PcInstance;
@@ -20,6 +6,10 @@ import net.sf.l2j.gameserver.model.partymatching.PartyMatchRoomList;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.serverpackets.ExClosePartyRoom;
 
+/**
+ * Format (ch) dd
+ * @author -Wooden-
+ */
 public final class RequestWithdrawPartyRoom extends L2GameClientPacket
 {
 	private int _roomid;
@@ -36,26 +26,26 @@ public final class RequestWithdrawPartyRoom extends L2GameClientPacket
 	@Override
 	protected void runImpl()
 	{
-		final L2PcInstance activeChar = getClient().getActiveChar();
-		if (activeChar == null)
+		final L2PcInstance _activeChar = getClient().getActiveChar();
+		if (_activeChar == null)
 			return;
 		
-		final PartyMatchRoom room = PartyMatchRoomList.getInstance().getRoom(_roomid);
-		if (room == null)
+		final PartyMatchRoom _room = PartyMatchRoomList.getInstance().getRoom(_roomid);
+		if (_room == null)
 			return;
 		
-		if ((activeChar.isInParty() && room.getOwner().isInParty()) && (activeChar.getParty().getPartyLeaderOID() == room.getOwner().getParty().getPartyLeaderOID()))
+		if ((_activeChar.isInParty() && _room.getOwner().isInParty()) && (_activeChar.getParty().getPartyLeaderOID() == _room.getOwner().getParty().getPartyLeaderOID()))
 		{
 			// If user is in party with Room Owner is not removed from Room
 		}
 		else
 		{
-			room.deleteMember(activeChar);
-			activeChar.setPartyRoom(0);
-			activeChar.broadcastUserInfo();
+			_room.deleteMember(_activeChar);
+			_activeChar.setPartyRoom(0);
+			_activeChar.broadcastUserInfo();
 			
-			activeChar.sendPacket(ExClosePartyRoom.STATIC_PACKET);
-			activeChar.sendPacket(SystemMessageId.PARTY_ROOM_EXITED);
+			_activeChar.sendPacket(ExClosePartyRoom.STATIC_PACKET);
+			_activeChar.sendPacket(SystemMessageId.PARTY_ROOM_EXITED);
 		}
 	}
 }

@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.instancemanager;
 
 import java.sql.Connection;
@@ -710,8 +696,8 @@ public class MercTicketManager
 							// create the ticket in the gameworld
 							ItemInstance dropticket = new ItemInstance(IdFactory.getInstance().getNextId(), itemId);
 							dropticket.setLocation(ItemInstance.ItemLocation.INVENTORY);
-							dropticket.setDestroyProtected(true);
 							dropticket.dropMe(null, x, y, z);
+							dropticket.setDropTime(0); // avoids it from beeing removed by the auto item destroyer
 							L2World.getInstance().storeObject(dropticket);
 							_droppedTickets.add(dropticket);
 						}
@@ -719,7 +705,6 @@ public class MercTicketManager
 					}
 				}
 			}
-			rs.close();
 			statement.close();
 		}
 		catch (Exception e)
@@ -840,8 +825,8 @@ public class MercTicketManager
 				// create the ticket in the gameworld
 				ItemInstance dropticket = new ItemInstance(IdFactory.getInstance().getNextId(), itemId);
 				dropticket.setLocation(ItemInstance.ItemLocation.INVENTORY);
-				dropticket.setDestroyProtected(true);
-				dropticket.dropMe(activeChar, x, y, z);
+				dropticket.dropMe(null, x, y, z);
+				dropticket.setDropTime(0); // avoids it from beeing removed by the auto item destroyer
 				L2World.getInstance().storeObject(dropticket); // add to the world
 				// and keep track of this ticket in the list
 				_droppedTickets.add(dropticket);

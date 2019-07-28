@@ -1,18 +1,6 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.network.serverpackets;
+
+import Extensions.Vip.VIPEngine;
 
 import net.sf.l2j.Config;
 import net.sf.l2j.gameserver.datatables.NpcTable;
@@ -256,7 +244,7 @@ public class UserInfo extends L2GameServerPacket
 			
 		writeD(_activeChar.getClanCrestLargeId());
 		writeC(_activeChar.isNoble() ? 1 : 0); // 0x01: symbol on char menu ctrl+I
-		writeC(_activeChar.isHero() || (_activeChar.isGM() && Config.GM_HERO_AURA) ? 1 : 0); // 0x01: Hero Aura
+		writeC(_activeChar.isHero() || (_activeChar.isGM() && Config.GM_HERO_AURA) || (VIPEngine.getInstance().isVip(_activeChar) && Config.VIPS_HERO_AURA) ? 1 : 0); // 0x01: Hero Aura
 		
 		writeC(_activeChar.isFishing() ? 1 : 0); // Fishing Mode
 		

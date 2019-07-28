@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package quests.Q215_TrialOfThePilgrim;
 
 import net.sf.l2j.gameserver.model.actor.L2Npc;
@@ -338,12 +324,12 @@ public class Q215_TrialOfThePilgrim extends Quest
 		switch (npc.getNpcId())
 		{
 			case LAVA_SALAMANDER:
-				if (st.getInt("cond") == 3 && st.dropItems(ESSENCE_OF_FLAME, 1, 1, 200000))
+				if (st.getInt("cond") == 3 && st.dropItems(ESSENCE_OF_FLAME, 1, 1, 300000))
 					st.set("cond", "4");
 				break;
 			
 			case NAHIR:
-				if (st.getInt("cond") == 10 && st.dropItems(HAIR_OF_NAHIR, 1, 1, 200000))
+				if (st.getInt("cond") == 10 && st.dropItemsAlways(HAIR_OF_NAHIR, 1, 1))
 					st.set("cond", "11");
 				break;
 			

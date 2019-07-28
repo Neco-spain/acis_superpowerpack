@@ -1,22 +1,9 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.ai;
 
 import java.util.concurrent.Future;
 import java.util.logging.Logger;
 
+import net.sf.l2j.gameserver.GameTimeController;
 import net.sf.l2j.gameserver.ThreadPoolManager;
 import net.sf.l2j.gameserver.model.L2CharPosition;
 import net.sf.l2j.gameserver.model.L2Object;
@@ -45,6 +32,14 @@ abstract class AbstractAI implements Ctrl
 	protected static final Logger _log = Logger.getLogger(AbstractAI.class.getName());
 	
 	private NextAction _nextAction;
+	
+	/**
+	 * @return the _nextAction
+	 */
+	public NextAction getNextAction()
+	{
+		return _nextAction;
+	}
 	
 	/**
 	 * @param nextAction the _nextAction to set
@@ -115,7 +110,7 @@ abstract class AbstractAI implements Ctrl
 	protected L2Skill _skill;
 	
 	/** Different internal state flags */
-	private long _moveToPawnTimeout;
+	private int _moveToPawnTimeout;
 	
 	protected Future<?> _followTask = null;
 	private static final int FOLLOW_INTERVAL = 1000;
@@ -258,8 +253,9 @@ abstract class AbstractAI implements Ctrl
 		}
 		
 		// If do move or follow intention drop next action.
-		if (_nextAction != null && _nextAction.getIntention() == intention)
-			_nextAction = null;
+		if (_nextAction != null)
+			if (_nextAction.getIntentions().contains(intention))
+				_nextAction = null;
 	}
 	
 	/**
@@ -372,8 +368,9 @@ abstract class AbstractAI implements Ctrl
 		}
 		
 		// Do next action.
-		if (_nextAction != null && _nextAction.getEvent() == evt)
-			_nextAction.run();
+		if (_nextAction != null)
+			if (_nextAction.getEvents().contains(evt))
+				_nextAction.doAction();
 	}
 	
 	protected abstract void onIntentionIdle();
@@ -454,16 +451,17 @@ abstract class AbstractAI implements Ctrl
 	 */
 	protected void moveToPawn(L2Object pawn, int offset)
 	{
-		if (_clientMoving && _target == pawn && _actor.isOnGeodataPath() && System.currentTimeMillis() < _moveToPawnTimeout)
+		if (_clientMoving && _target == pawn && _actor.isOnGeodataPath() && GameTimeController.getInstance().getGameTicks() < _moveToPawnTimeout)
 			return;
 		
 		_target = pawn;
 		if (_target == null)
 			return;
 		
-		_moveToPawnTimeout = System.currentTimeMillis() + 2000;
+		_moveToPawnTimeout = GameTimeController.getInstance().getGameTicks() + 20;
 		
-		moveTo(_target.getX(), _target.getY(), _target.getZ(), (offset < 10) ? 10 : offset);
+		moveTo(_target.getX(), _target.getY(), _target.getZ(), offset = offset < 10 ? 10 : offset);
+		
 	}
 	
 	/**
@@ -608,7 +606,7 @@ abstract class AbstractAI implements Ctrl
 		
 		if (_actor instanceof L2PcInstance)
 		{
-			if (!AttackStanceTaskManager.getInstance().isInAttackStance(_actor) && isAutoAttacking())
+			if (!AttackStanceTaskManager.getInstance().get(_actor) && isAutoAttacking())
 				AttackStanceTaskManager.getInstance().add(_actor);
 		}
 		else if (isAutoAttacking())

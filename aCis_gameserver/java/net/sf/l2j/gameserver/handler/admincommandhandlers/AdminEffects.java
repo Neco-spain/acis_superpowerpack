@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.handler.admincommandhandlers;
 
 import java.util.StringTokenizer;
@@ -52,7 +38,7 @@ import net.sf.l2j.gameserver.util.Broadcast;
  * <li>social = forces an L2Character instance to broadcast social action packets.</li>
  * <li>effect = forces an L2Character instance to broadcast MSU packets.</li>
  * <li>abnormal = force changes over an L2Character instance's abnormal state.</li>
- * <li>play_sound/jukebox = Music broadcasting related commands.</li>
+ * <li>play_sound/play_sounds = Music broadcasting related commands.</li>
  * <li>atmosphere = sky change related commands.</li>
  * </ul>
  */
@@ -293,7 +279,7 @@ public class AdminEffects implements IAdminCommandHandler
 						L2PcInstance player = L2World.getInstance().getPlayer(targetOrRadius);
 						if (player != null)
 						{
-							if (performSocial(social, player))
+							if (performSocial(social, player, activeChar))
 								activeChar.sendMessage(player.getName() + " was affected by your social request.");
 							else
 								activeChar.sendPacket(SystemMessageId.NOTHING_HAPPENED);
@@ -303,7 +289,7 @@ public class AdminEffects implements IAdminCommandHandler
 							final int radius = Integer.parseInt(targetOrRadius);
 							
 							for (L2Object object : activeChar.getKnownList().getKnownTypeInRadius(L2Character.class, radius))
-								performSocial(social, object);
+								performSocial(social, object, activeChar);
 							
 							activeChar.sendMessage(radius + " units radius was affected by your social request.");
 						}
@@ -315,7 +301,7 @@ public class AdminEffects implements IAdminCommandHandler
 					if (obj == null)
 						obj = activeChar;
 					
-					if (performSocial(social, obj))
+					if (performSocial(social, obj, activeChar))
 						activeChar.sendMessage(obj.getName() + " was affected by your social request.");
 					else
 						activeChar.sendPacket(SystemMessageId.NOTHING_HAPPENED);
@@ -363,7 +349,6 @@ public class AdminEffects implements IAdminCommandHandler
 					L2Object obj = activeChar.getTarget();
 					if (obj == null)
 						obj = activeChar;
-					
 					if (performAbnormal(abnormal, obj))
 						activeChar.sendMessage(obj.getName() + " was affected by your abnormal request.");
 					else
@@ -437,7 +422,7 @@ public class AdminEffects implements IAdminCommandHandler
 		return false;
 	}
 	
-	private static boolean performSocial(int action, L2Object target)
+	private static boolean performSocial(int action, L2Object target, L2PcInstance activeChar)
 	{
 		if (target instanceof L2Character)
 		{

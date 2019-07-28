@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.network.serverpackets;
 
 import java.util.ArrayList;
@@ -59,19 +45,27 @@ public class PartyMatchList extends L2GameServerPacket
 			_rooms.add(room);
 		}
 		
+		int count = 0;
+		int size = _rooms.size();
+		
 		writeC(0x96);
-		writeD((!_rooms.isEmpty()) ? 1 : 0);
+		if (size > 0)
+			writeD(1);
+		else
+			writeD(0);
+		
 		writeD(_rooms.size());
-		for (PartyMatchRoom room : _rooms)
+		while (size > count)
 		{
-			writeD(room.getId());
-			writeS(room.getTitle());
-			writeD(room.getLocation());
-			writeD(room.getMinLvl());
-			writeD(room.getMaxLvl());
-			writeD(room.getMembers());
-			writeD(room.getMaxMembers());
-			writeS(room.getOwner().getName());
+			writeD(_rooms.get(count).getId());
+			writeS(_rooms.get(count).getTitle());
+			writeD(_rooms.get(count).getLocation());
+			writeD(_rooms.get(count).getMinLvl());
+			writeD(_rooms.get(count).getMaxLvl());
+			writeD(_rooms.get(count).getMembers());
+			writeD(_rooms.get(count).getMaxMembers());
+			writeS(_rooms.get(count).getOwner().getName());
+			count++;
 		}
 	}
 }

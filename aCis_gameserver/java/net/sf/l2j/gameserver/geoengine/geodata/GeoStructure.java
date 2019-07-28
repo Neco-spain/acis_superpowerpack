@@ -44,7 +44,7 @@ public final class GeoStructure
 	public static final byte TYPE_COMPLEX_L2OFF = 0x40;
 	public static final byte TYPE_COMPLEX_L2D = (byte) 0xD1;
 	public static final byte TYPE_MULTILAYER_L2J = 2;
-	// public static final byte TYPE_MULTILAYER_L2OFF = 0x47; // does officially not exist
+//	public static final byte TYPE_MULTILAYER_L2OFF = 0x47; // does officially not exist
 	public static final byte TYPE_MULTILAYER_L2D = (byte) 0xD2;
 	
 	public static final byte NULL = 0;

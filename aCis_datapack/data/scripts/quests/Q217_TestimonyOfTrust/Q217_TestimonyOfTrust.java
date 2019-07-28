@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package quests.Q217_TestimonyOfTrust;
 
 import net.sf.l2j.gameserver.model.actor.L2Npc;
@@ -412,7 +398,7 @@ public class Q217_TestimonyOfTrust extends Quest
 			case DRYAD_ELDER:
 				if (st.getInt("cond") == 2 && !st.hasQuestItems(SEED_OF_VERDURE) && Rnd.get(100) < 33)
 				{
-					addSpawn(ACTEA_OF_VERDANT_WILDS, npc, true, 200000, true);
+					addSpawn(ACTEA_OF_VERDANT_WILDS, npc, true, 600000, true);
 					st.playSound(QuestState.SOUND_BEFORE_BATTLE);
 				}
 				break;
@@ -421,7 +407,7 @@ public class Q217_TestimonyOfTrust extends Quest
 			case LIREIN_ELDER:
 				if (st.getInt("cond") == 2 && !st.hasQuestItems(BREATH_OF_WINDS) && Rnd.get(100) < 33)
 				{
-					addSpawn(LUELL_OF_ZEPHYR_WINDS, npc, true, 200000, true);
+					addSpawn(LUELL_OF_ZEPHYR_WINDS, npc, true, 600000, true);
 					st.playSound(QuestState.SOUND_BEFORE_BATTLE);
 				}
 				break;

@@ -1,27 +1,18 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.instancemanager;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import net.sf.l2j.Config;
-import net.sf.l2j.commons.lang.StringUtil;
 import net.sf.l2j.gameserver.datatables.GmListTable;
 import net.sf.l2j.gameserver.idfactory.IdFactory;
 import net.sf.l2j.gameserver.model.actor.instance.L2PcInstance;
@@ -461,33 +452,34 @@ public final class PetitionManager
 	
 	public void sendPendingPetitionList(L2PcInstance activeChar)
 	{
-		final StringBuilder sb = new StringBuilder("<html><body><center><font color=\"LEVEL\">Current Petitions</font><br><table width=\"300\">");
+		StringBuilder htmlContent = new StringBuilder("<html><body>" + "<center><font color=\"LEVEL\">Current Petitions</font><br><table width=\"300\">");
+		SimpleDateFormat dateFormat = new SimpleDateFormat("dd MMM HH:mm z");
 		
 		if (getPendingPetitionCount() == 0)
-			sb.append("<tr><td colspan=\"4\">There are no currently pending petitions.</td></tr>");
+			htmlContent.append("<tr><td colspan=\"4\">There are no currently pending petitions.</td></tr>");
 		else
-			sb.append("<tr><td></td><td><font color=\"999999\">Petitioner</font></td><td><font color=\"999999\">Petition Type</font></td><td><font color=\"999999\">Submitted</font></td></tr>");
+			htmlContent.append("<tr><td></td><td><font color=\"999999\">Petitioner</font></td>" + "<td><font color=\"999999\">Petition Type</font></td><td><font color=\"999999\">Submitted</font></td></tr>");
 		
 		for (Petition currPetition : getPendingPetitions().values())
 		{
 			if (currPetition == null)
 				continue;
 			
-			sb.append("<tr><td>");
+			htmlContent.append("<tr><td>");
 			
 			if (currPetition.getState() != PetitionState.In_Process)
-				StringUtil.append(sb, "<button value=\"View\" action=\"bypass -h admin_view_petition ", currPetition.getId(), "\" width=\"40\" height=\"15\" back=\"sek.cbui94\" fore=\"sek.cbui92\">");
+				htmlContent.append("<button value=\"View\" action=\"bypass -h admin_view_petition " + currPetition.getId() + "\" " + "width=\"40\" height=\"15\" back=\"sek.cbui94\" fore=\"sek.cbui92\">");
 			else
-				sb.append("<font color=\"999999\">In Process</font>");
+				htmlContent.append("<font color=\"999999\">In Process</font>");
 			
-			StringUtil.append(sb, "</td><td>", currPetition.getPetitioner().getName(), "</td><td>", currPetition.getTypeAsString(), "</td><td>", StringUtil.DATE.format(currPetition.getSubmitTime()), "</td></tr>");
+			htmlContent.append("</td><td>" + currPetition.getPetitioner().getName() + "</td><td>" + currPetition.getTypeAsString() + "</td><td>" + dateFormat.format(new Date(currPetition.getSubmitTime())) + "</td></tr>");
 		}
 		
-		sb.append("</table><br><button value=\"Refresh\" action=\"bypass -h admin_view_petitions\" width=\"50\" " + "height=\"15\" back=\"sek.cbui94\" fore=\"sek.cbui92\"><br><button value=\"Back\" action=\"bypass -h admin_admin\" " + "width=\"40\" height=\"15\" back=\"sek.cbui94\" fore=\"sek.cbui92\"></center></body></html>");
+		htmlContent.append("</table><br><button value=\"Refresh\" action=\"bypass -h admin_view_petitions\" width=\"50\" " + "height=\"15\" back=\"sek.cbui94\" fore=\"sek.cbui92\"><br><button value=\"Back\" action=\"bypass -h admin_admin\" " + "width=\"40\" height=\"15\" back=\"sek.cbui94\" fore=\"sek.cbui92\"></center></body></html>");
 		
-		final NpcHtmlMessage html = new NpcHtmlMessage(0);
-		html.setHtml(sb.toString());
-		activeChar.sendPacket(html);
+		NpcHtmlMessage htmlMsg = new NpcHtmlMessage(0);
+		htmlMsg.setHtml(htmlContent.toString());
+		activeChar.sendPacket(htmlMsg);
 	}
 	
 	public int submitPetition(L2PcInstance petitioner, String petitionText, int petitionType)
@@ -513,21 +505,67 @@ public final class PetitionManager
 			return;
 		
 		Petition currPetition = getPendingPetitions().get(petitionId);
-		final StringBuilder sb = new StringBuilder("<html><body>");
+		StringBuilder htmlContent = new StringBuilder("<html><body>");
+		SimpleDateFormat dateFormat = new SimpleDateFormat("EEE dd MMM HH:mm z");
 		
-		sb.append("<center><br><font color=\"LEVEL\">Petition #" + currPetition.getId() + "</font><br1>");
-		sb.append("<img src=\"L2UI.SquareGray\" width=\"200\" height=\"1\"></center><br>");
-		sb.append("Submit Time: " + StringUtil.DATE_MM.format(currPetition.getSubmitTime()) + "<br1>");
-		sb.append("Petitioner: " + currPetition.getPetitioner().getName() + "<br1>");
-		sb.append("Petition Type: " + currPetition.getTypeAsString() + "<br>" + currPetition.getContent() + "<br>");
-		sb.append("<center><button value=\"Accept\" action=\"bypass -h admin_accept_petition " + currPetition.getId() + "\"" + "width=\"50\" height=\"15\" back=\"sek.cbui94\" fore=\"sek.cbui92\"><br1>");
-		sb.append("<button value=\"Reject\" action=\"bypass -h admin_reject_petition " + currPetition.getId() + "\" " + "width=\"50\" height=\"15\" back=\"sek.cbui94\" fore=\"sek.cbui92\"><br>");
-		sb.append("<button value=\"Back\" action=\"bypass -h admin_view_petitions\" width=\"40\" height=\"15\" back=\"sek.cbui94\" " + "fore=\"sek.cbui92\"></center>");
-		sb.append("</body></html>");
+		htmlContent.append("<center><br><font color=\"LEVEL\">Petition #" + currPetition.getId() + "</font><br1>");
+		htmlContent.append("<img src=\"L2UI.SquareGray\" width=\"200\" height=\"1\"></center><br>");
+		htmlContent.append("Submit Time: " + dateFormat.format(new Date(currPetition.getSubmitTime())) + "<br1>");
+		htmlContent.append("Petitioner: " + currPetition.getPetitioner().getName() + "<br1>");
+		htmlContent.append("Petition Type: " + currPetition.getTypeAsString() + "<br>" + currPetition.getContent() + "<br>");
+		htmlContent.append("<center><button value=\"Accept\" action=\"bypass -h admin_accept_petition " + currPetition.getId() + "\"" + "width=\"50\" height=\"15\" back=\"sek.cbui94\" fore=\"sek.cbui92\"><br1>");
+		htmlContent.append("<button value=\"Reject\" action=\"bypass -h admin_reject_petition " + currPetition.getId() + "\" " + "width=\"50\" height=\"15\" back=\"sek.cbui94\" fore=\"sek.cbui92\"><br>");
+		htmlContent.append("<button value=\"Back\" action=\"bypass -h admin_view_petitions\" width=\"40\" height=\"15\" back=\"sek.cbui94\" " + "fore=\"sek.cbui92\"></center>");
+		htmlContent.append("</body></html>");
 		
-		final NpcHtmlMessage html = new NpcHtmlMessage(0);
-		html.setHtml(sb.toString());
-		activeChar.sendPacket(html);
+		NpcHtmlMessage htmlMsg = new NpcHtmlMessage(0);
+		htmlMsg.setHtml(htmlContent.toString());
+		activeChar.sendPacket(htmlMsg);
+	}
+	
+	@SuppressWarnings("null")
+	public static synchronized void logResult(String petitioner, String responder, long submitTime, long endTime, String content)
+	{
+		if (!Config.PETITION_LOGGING)
+			return;
+		
+		SimpleDateFormat formatter;
+		formatter = new SimpleDateFormat("dd/MM/yyyy H:mm:ss");
+		String date = formatter.format(new Date());
+		FileWriter save = null;
+		try
+		{
+			File file = new File("log/petition.csv");
+			
+			boolean writeHead = false;
+			if (!file.exists())
+				writeHead = true;
+			
+			save = new FileWriter(file, true);
+			
+			if (writeHead)
+			{
+				String header = "Date,petitioner,responder,submitTime,endTime,content\r\n";
+				save.write(header);
+			}
+			
+			String out = date + "," + petitioner + "," + responder + "," + submitTime + "," + endTime + "," + content + "\r\n";
+			save.write(out);
+		}
+		catch (IOException e)
+		{
+			_log.log(Level.WARNING, "Petition System: Petition log could not be saved: ", e);
+		}
+		finally
+		{
+			try
+			{
+				save.close();
+			}
+			catch (Exception e)
+			{
+			}
+		}
 	}
 	
 	private static class SingletonHolder

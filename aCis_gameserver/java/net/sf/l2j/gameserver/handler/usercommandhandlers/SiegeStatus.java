@@ -1,20 +1,5 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.handler.usercommandhandlers;
 
-import net.sf.l2j.commons.lang.StringUtil;
 import net.sf.l2j.gameserver.handler.IUserCommandHandler;
 import net.sf.l2j.gameserver.instancemanager.SiegeManager;
 import net.sf.l2j.gameserver.model.L2Clan;
@@ -23,6 +8,7 @@ import net.sf.l2j.gameserver.model.entity.Siege;
 import net.sf.l2j.gameserver.model.zone.type.L2SiegeZone;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.serverpackets.NpcHtmlMessage;
+import net.sf.l2j.util.StringUtil;
 
 public class SiegeStatus implements IUserCommandHandler
 {
@@ -37,6 +23,9 @@ public class SiegeStatus implements IUserCommandHandler
 	@Override
 	public boolean useUserCommand(int id, L2PcInstance activeChar)
 	{
+		if (COMMAND_IDS[0] != id)
+			return false;
+		
 		if (!activeChar.isClanLeader())
 		{
 			activeChar.sendPacket(SystemMessageId.ONLY_CLAN_LEADER_CAN_ISSUE_COMMANDS);
@@ -51,7 +40,8 @@ public class SiegeStatus implements IUserCommandHandler
 		
 		final L2Clan clan = activeChar.getClan();
 		
-		final StringBuilder sb = new StringBuilder();
+		// Used to build dynamic content (in that case, online clan members).
+		StringBuilder content = new StringBuilder();
 		
 		for (Siege siege : SiegeManager.getSieges())
 		{
@@ -63,13 +53,13 @@ public class SiegeStatus implements IUserCommandHandler
 			{
 				final L2SiegeZone zone = siege.getCastle().getZone();
 				for (L2PcInstance member : clan.getOnlineMembers())
-					StringUtil.append(sb, "<tr><td width=170>", member.getName(), "</td><td width=100>", (zone.isInsideZone(member.getX(), member.getY(), member.getZ())) ? IN_PROGRESS : OUTSIDE_ZONE, "</td></tr>");
+					StringUtil.append(content, "<tr><td width=170>", member.getName(), "</td><td width=100>", (zone.isInsideZone(member.getX(), member.getY(), member.getZ())) ? IN_PROGRESS : OUTSIDE_ZONE, "</td></tr>");
 				
-				final NpcHtmlMessage html = new NpcHtmlMessage(0);
+				NpcHtmlMessage html = new NpcHtmlMessage(0);
 				html.setFile("data/html/siege_status.htm");
 				html.replace("%kills%", clan.getSiegeKills());
 				html.replace("%deaths%", clan.getSiegeDeaths());
-				html.replace("%content%", sb.toString());
+				html.replace("%content%", content.toString());
 				activeChar.sendPacket(html);
 				return true;
 			}

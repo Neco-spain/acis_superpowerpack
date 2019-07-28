@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.network.clientpackets;
 
 import java.sql.Connection;
@@ -48,6 +34,21 @@ public final class RequestDestroyItem extends L2GameClientPacket
 		if (activeChar == null)
 			return;
 		
+		if (activeChar.isSubmitingPin())
+		{
+			activeChar.sendMessage("Unable to do any action while PIN is not submitted");
+			return;
+		}
+		
+		int count = _count;
+		if (count <= 0)
+		{
+			if (count < 0)
+				Util.handleIllegalPlayerAction(activeChar, "[RequestDestroyItem] " + activeChar.getName() + " of account " + activeChar.getAccountName() + " tried to destroy item with oid " + _objectId + " but has count < 0.", Config.DEFAULT_PUNISH);
+			
+			return;
+		}
+		
 		if (activeChar.isProcessingTransaction() || activeChar.isInStoreMode())
 		{
 			activeChar.sendPacket(SystemMessageId.CANNOT_TRADE_DISCARD_DROP_ITEM_WHILE_IN_SHOPMODE);
@@ -57,18 +58,6 @@ public final class RequestDestroyItem extends L2GameClientPacket
 		final ItemInstance itemToRemove = activeChar.getInventory().getItemByObjectId(_objectId);
 		if (itemToRemove == null)
 			return;
-		
-		if (_count < 1 || _count > itemToRemove.getCount())
-		{
-			activeChar.sendPacket(SystemMessageId.CANNOT_DESTROY_NUMBER_INCORRECT);
-			return;
-		}
-		
-		if (!itemToRemove.isStackable() && _count > 1)
-		{
-			Util.handleIllegalPlayerAction(activeChar, "[RequestDestroyItem] " + activeChar.getName() + " of account " + activeChar.getAccountName() + " tried to destroy a non-stackable item with oid " + _objectId + " but has count > 1.", Config.DEFAULT_PUNISH);
-			return;
-		}
 		
 		final int itemId = itemToRemove.getItemId();
 		
@@ -101,7 +90,22 @@ public final class RequestDestroyItem extends L2GameClientPacket
 			return;
 		}
 		
-		if (itemToRemove.isEquipped() && (!itemToRemove.isStackable() || (itemToRemove.isStackable() && _count >= itemToRemove.getCount())))
+		if (!itemToRemove.isStackable() && count > 1)
+		{
+			Util.handleIllegalPlayerAction(activeChar, "[RequestDestroyItem] " + activeChar.getName() + " of account " + activeChar.getAccountName() + " tried to destroy a non-stackable item with oid " + _objectId + " but has count > 1.", Config.DEFAULT_PUNISH);
+			return;
+		}
+		
+		if (!activeChar.getInventory().canManipulateWithItemId(itemId))
+		{
+			activeChar.sendPacket(SystemMessageId.CANNOT_USE_ON_YOURSELF);
+			return;
+		}
+		
+		if (count > itemToRemove.getCount())
+			count = itemToRemove.getCount();
+		
+		if (itemToRemove.isEquipped() && (!itemToRemove.isStackable() || (itemToRemove.isStackable() && count >= itemToRemove.getCount())))
 		{
 			ItemInstance[] unequipped = activeChar.getInventory().unEquipItemInSlotAndRecord(itemToRemove.getLocationSlot());
 			InventoryUpdate iu = new InventoryUpdate();
@@ -138,7 +142,7 @@ public final class RequestDestroyItem extends L2GameClientPacket
 			}
 		}
 		
-		ItemInstance removedItem = activeChar.getInventory().destroyItem("Destroy", _objectId, _count, activeChar, null);
+		ItemInstance removedItem = activeChar.getInventory().destroyItem("Destroy", _objectId, count, activeChar, null);
 		if (removedItem == null)
 			return;
 		

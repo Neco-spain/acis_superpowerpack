@@ -1,25 +1,22 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.network.clientpackets;
 
+import Extensions.OnEnter;
+import Extensions.AutoManagers.AutoRestartGameServer;
+import Extensions.Events.SiegeReward;
+import Extensions.Protection.ipCatcher;
+
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Set;
+
 import net.sf.l2j.Config;
-import net.sf.l2j.gameserver.communitybbs.Manager.MailBBSManager;
+import net.sf.l2j.gameserver.Announcements;
+import net.sf.l2j.gameserver.GameTimeController;
 import net.sf.l2j.gameserver.datatables.AdminCommandAccessRights;
-import net.sf.l2j.gameserver.datatables.AnnouncementTable;
 import net.sf.l2j.gameserver.datatables.GmListTable;
 import net.sf.l2j.gameserver.datatables.MapRegionTable;
+import net.sf.l2j.gameserver.datatables.SkillTable;
 import net.sf.l2j.gameserver.datatables.SkillTable.FrequentSkill;
 import net.sf.l2j.gameserver.instancemanager.ClanHallManager;
 import net.sf.l2j.gameserver.instancemanager.CoupleManager;
@@ -36,20 +33,19 @@ import net.sf.l2j.gameserver.model.base.Race;
 import net.sf.l2j.gameserver.model.entity.ClanHall;
 import net.sf.l2j.gameserver.model.entity.Couple;
 import net.sf.l2j.gameserver.model.entity.Siege;
+import net.sf.l2j.gameserver.model.item.instance.ItemInstance;
 import net.sf.l2j.gameserver.model.olympiad.Olympiad;
 import net.sf.l2j.gameserver.model.quest.Quest;
 import net.sf.l2j.gameserver.model.quest.QuestState;
 import net.sf.l2j.gameserver.model.zone.ZoneId;
 import net.sf.l2j.gameserver.network.SystemMessageId;
+import net.sf.l2j.gameserver.network.serverpackets.CreatureSay;
 import net.sf.l2j.gameserver.network.serverpackets.Die;
 import net.sf.l2j.gameserver.network.serverpackets.EtcStatusUpdate;
-import net.sf.l2j.gameserver.network.serverpackets.ExMailArrived;
 import net.sf.l2j.gameserver.network.serverpackets.ExStorageMaxCount;
 import net.sf.l2j.gameserver.network.serverpackets.FriendList;
 import net.sf.l2j.gameserver.network.serverpackets.HennaInfo;
 import net.sf.l2j.gameserver.network.serverpackets.ItemList;
-import net.sf.l2j.gameserver.network.serverpackets.NpcHtmlMessage;
-import net.sf.l2j.gameserver.network.serverpackets.PlaySound;
 import net.sf.l2j.gameserver.network.serverpackets.PledgeShowMemberListAll;
 import net.sf.l2j.gameserver.network.serverpackets.PledgeShowMemberListUpdate;
 import net.sf.l2j.gameserver.network.serverpackets.PledgeSkillList;
@@ -59,7 +55,7 @@ import net.sf.l2j.gameserver.network.serverpackets.ShortCutInit;
 import net.sf.l2j.gameserver.network.serverpackets.SkillCoolTime;
 import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
 import net.sf.l2j.gameserver.network.serverpackets.UserInfo;
-import net.sf.l2j.gameserver.taskmanager.GameTimeTaskManager;
+import net.sf.l2j.gameserver.util.Util;
 
 public class EnterWorld extends L2GameClientPacket
 {
@@ -80,22 +76,49 @@ public class EnterWorld extends L2GameClientPacket
 			return;
 		}
 		
+		if (L2World.getInstance().findObject(activeChar.getObjectId()) != null)
+		{
+		}
+		// Last Visit Information
+		if (Config.ALLOW_LAST_VISIT_INFORMATION)
+		{
+			DateFormat formatter = new SimpleDateFormat("dd/MM/yyyy hh:mm:ss");
+			Calendar calendar = Calendar.getInstance();
+			calendar.setTimeInMillis(activeChar.getLastAccess());
+			if (activeChar.getUptime() > 1)
+				activeChar.sendMessage("Your last visit was at " + formatter.format(calendar.getTime()));
+		}
+		// Auto Restart GameServer System
+		if (Config.RESTART_BY_TIME_OF_DAY)
+		{
+			ShowNextRestart(activeChar);
+		}
+		
 		if (activeChar.isGM())
 		{
-			if (Config.GM_STARTUP_INVULNERABLE && AdminCommandAccessRights.getInstance().hasAccess("admin_invul", activeChar.getAccessLevel()))
-				activeChar.setIsInvul(true);
-			
-			if (Config.GM_STARTUP_INVISIBLE && AdminCommandAccessRights.getInstance().hasAccess("admin_hide", activeChar.getAccessLevel()))
-				activeChar.getAppearance().setInvisible();
-			
-			if (Config.GM_STARTUP_SILENCE && AdminCommandAccessRights.getInstance().hasAccess("admin_silence", activeChar.getAccessLevel()))
-				activeChar.setInRefusalMode(true);
-			
-			if (Config.GM_STARTUP_AUTO_LIST && AdminCommandAccessRights.getInstance().hasAccess("admin_gmlist", activeChar.getAccessLevel()))
-				GmListTable.getInstance().addGm(activeChar, false);
-			else
-				GmListTable.getInstance().addGm(activeChar, true);
+			if (Config.AVAILABLE_GMS.contains(activeChar.getObjectId())) {
+				if (Config.GM_STARTUP_INVULNERABLE && AdminCommandAccessRights.getInstance().hasAccess("admin_invul", activeChar.getAccessLevel()))
+					activeChar.setIsInvul(true);
+				
+				if (Config.GM_STARTUP_INVISIBLE && AdminCommandAccessRights.getInstance().hasAccess("admin_hide", activeChar.getAccessLevel()))
+					activeChar.getAppearance().setInvisible();
+				
+				if (Config.GM_STARTUP_SILENCE && AdminCommandAccessRights.getInstance().hasAccess("admin_silence", activeChar.getAccessLevel()))
+					activeChar.setInRefusalMode(true);
+				
+				if (Config.GM_STARTUP_AUTO_LIST && AdminCommandAccessRights.getInstance().hasAccess("admin_gmliston", activeChar.getAccessLevel()))
+					GmListTable.getInstance().addGm(activeChar, false);
+				else
+					GmListTable.getInstance().addGm(activeChar, true);
+			}
+			else {
+				System.out.println("Player " + activeChar.getName() + " was not listed in GMs list with object id: " + activeChar.getObjectId() + " so his access level were made to 0.");
+				activeChar.setAccessLevel(0);
+			}
 		}
+		
+		if (SiegeReward.ACTIVATED_SYSTEM && !SiegeReward.REWARD_ACTIVE_MEMBERS_ONLY)
+			SiegeReward.getInstance().processWorldEnter(activeChar);
 		
 		// Set dead status if applies
 		if (activeChar.getCurrentHp() < 0.5)
@@ -108,7 +131,7 @@ public class EnterWorld extends L2GameClientPacket
 			notifyClanMembers(activeChar);
 			notifySponsorOrApprentice(activeChar);
 			
-			// Add message at connexion if clanHall not paid.
+			// Add message at connection if clanHall not paid.
 			final ClanHall clanHall = ClanHallManager.getInstance().getClanHallByOwner(clan);
 			if (clanHall != null)
 			{
@@ -163,14 +186,18 @@ public class EnterWorld extends L2GameClientPacket
 		if (Config.ALLOW_WEDDING)
 			engage(activeChar);
 		
+		final ipCatcher ipc = new ipCatcher();
+		if (ipc.isCatched(activeChar))
+			activeChar.logout();
+		
 		// Announcements, welcome & Seven signs period messages
 		activeChar.sendPacket(SystemMessageId.WELCOME_TO_LINEAGE);
 		SevenSigns.getInstance().sendCurrentPeriodMsg(activeChar);
-		AnnouncementTable.getInstance().showAnnouncements(activeChar, false);
+		Announcements.getInstance().showAnnouncements(activeChar);
 		
 		// if player is DE, check for shadow sense skill at night
 		if (activeChar.getRace() == Race.DarkElf && activeChar.getSkillLevel(294) == 1)
-			activeChar.sendPacket(SystemMessage.getSystemMessage((GameTimeTaskManager.getInstance().isNight()) ? SystemMessageId.NIGHT_S1_EFFECT_APPLIES : SystemMessageId.DAY_S1_EFFECT_DISAPPEARS).addSkillName(294));
+			activeChar.sendPacket(SystemMessage.getSystemMessage((GameTimeController.getInstance().isNight()) ? SystemMessageId.NIGHT_S1_EFFECT_APPLIES : SystemMessageId.DAY_S1_EFFECT_DISAPPEARS).addSkillName(294));
 		
 		activeChar.getMacroses().sendUpdate();
 		activeChar.sendPacket(new UserInfo(activeChar));
@@ -184,9 +211,61 @@ public class EnterWorld extends L2GameClientPacket
 		activeChar.sendPacket(new EtcStatusUpdate(activeChar));
 		activeChar.sendSkillList();
 		
+		if (Config.ENABLE_ANTI_OVER_ENCHANT_PROTECTION)
+		{
+			for (ItemInstance i : activeChar.getInventory().getItems())
+			{
+				if (!activeChar.isGM())
+				{
+					if (i.isEquipable())
+					{
+						if ((i.getEnchantLevel() > Config.ENCHANT_MAX_WEAPON_PROTECTION) || (i.getEnchantLevel() > Config.ENCHANT_MAX_ARMOR_PROTECTION) || (i.getEnchantLevel() > Config.ENCHANT_MAX_JEWELRY_PROTECTION))
+						{
+							// Delete Item Over enchanted
+							activeChar.getInventory().destroyItem(null, i, activeChar, null);
+							// Message to Player
+							activeChar.sendMessage("[Server]:You have Items over enchanted you will be kikked!");
+							// Kick player and send message
+							activeChar.logout();
+							activeChar.sendMessage("You kicked " + activeChar.getName() + " from the game.");
+							// Punishment
+							Util.handleIllegalPlayerAction(activeChar, "Player " + activeChar.getName() + " have item Overenchanted ", Config.DEFAULT_PUNISH);
+							// Log in console
+							_log.warning("#### WARNING ####");
+							_log.warning("Over Enchant Item");
+							_log.warning(i + " item has been removed from player,");
+							
+						}
+					}
+				}
+			}
+		}
+		
 		Quest.playerEnter(activeChar);
 		if (!Config.DISABLE_TUTORIAL)
 			loadTutorial(activeChar);
+		
+		if (activeChar.getOnlineTime() == 0 && Config.NEW_PLAYER_BUFFS)
+		{
+			if (activeChar.isMageClass())
+			{
+				for (int[] mageBuffs : Config.NEW_PLAYER_MAGE_BUFF_LIST)
+				{
+					if (mageBuffs == null)
+						continue;
+					
+					SkillTable.getInstance().getInfo(mageBuffs[0], mageBuffs[1]).getEffects(activeChar, activeChar);
+				}
+			}
+			else
+				for (int[] fighterBuffs : Config.NEW_PLAYER_FIGHT_BUFF_LIST)
+				{
+					if (fighterBuffs == null)
+						continue;
+					
+					SkillTable.getInstance().getInfo(fighterBuffs[0], fighterBuffs[1]).getEffects(activeChar, activeChar);
+				}
+		}
 		
 		for (Quest quest : QuestManager.getInstance().getAllManagedScripts())
 		{
@@ -195,29 +274,9 @@ public class EnterWorld extends L2GameClientPacket
 		}
 		activeChar.sendPacket(new QuestList(activeChar));
 		
-		// Unread mails make a popup appears.
-		if (Config.ENABLE_COMMUNITY_BOARD && MailBBSManager.getInstance().checkUnreadMail(activeChar) > 0)
-		{
-			activeChar.sendPacket(SystemMessageId.NEW_MAIL);
-			activeChar.sendPacket(new PlaySound("systemmsg_e.1233"));
-			activeChar.sendPacket(ExMailArrived.STATIC_PACKET);
-		}
-		
-		// Clan notice, if active.
-		if (Config.ENABLE_COMMUNITY_BOARD && clan != null && clan.isNoticeEnabled())
-		{
-			final NpcHtmlMessage html = new NpcHtmlMessage(0);
-			html.setFile("data/html/clan_notice.htm");
-			html.replace("%clan_name%", clan.getName());
-			html.replace("%notice_text%", clan.getNotice().replaceAll("\r\n", "<br>").replaceAll("action", "").replaceAll("bypass", ""));
-			sendPacket(html);
-		}
-		else if (Config.SERVER_NEWS)
-		{
-			final NpcHtmlMessage html = new NpcHtmlMessage(0);
-			html.setFile("data/html/servnews.htm");
-			sendPacket(html);
-		}
+		/** Customs */
+		OnEnter.addCustoms(activeChar);
+		/** /Customs */
 		
 		PetitionManager.getInstance().checkPetitionMessages(activeChar);
 		
@@ -242,6 +301,20 @@ public class EnterWorld extends L2GameClientPacket
 		// Attacker or spectator logging into a siege zone will be ported at town.
 		if (!activeChar.isGM() && (!activeChar.isInSiege() || activeChar.getSiegeState() < 2) && activeChar.isInsideZone(ZoneId.SIEGE))
 			activeChar.teleToLocation(MapRegionTable.TeleportWhereType.Town);
+		if (Config.ALLOW_ENTER_PMS)
+		{
+			Set<String> epks = Config.ENTER_PMS.keySet();
+			for (String i : epks)
+			{
+				CreatureSay cs = new CreatureSay(0, Config.ENTER_PMS_SYSTEM, Config.ENTER_PMS.get(i), i);
+				activeChar.sendPacket(cs);
+			}
+		}
+	}
+	
+	private static void ShowNextRestart(L2PcInstance activeChar)
+	{
+		activeChar.sendMessage("Next Server AutoRestart: " + AutoRestartGameServer.getInstance().getRestartNextTime());
 	}
 	
 	private static void engage(L2PcInstance cha)

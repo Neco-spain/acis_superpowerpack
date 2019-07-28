@@ -1,23 +1,10 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.model.olympiad;
 
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import net.sf.l2j.Config;
 import net.sf.l2j.gameserver.ai.CtrlIntention;
 import net.sf.l2j.gameserver.datatables.SkillTable;
 import net.sf.l2j.gameserver.model.L2Party;
@@ -32,6 +19,7 @@ import net.sf.l2j.gameserver.model.item.instance.ItemInstance;
 import net.sf.l2j.gameserver.model.zone.type.L2OlympiadStadiumZone;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.serverpackets.ExOlympiadMode;
+import net.sf.l2j.gameserver.network.serverpackets.ExShowScreenMessage;
 import net.sf.l2j.gameserver.network.serverpackets.InventoryUpdate;
 import net.sf.l2j.gameserver.network.serverpackets.L2GameServerPacket;
 import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
@@ -127,7 +115,7 @@ public abstract class AbstractOlympiadGame
 			return SystemMessage.getSystemMessage(SystemMessageId.THE_GAME_HAS_BEEN_CANCELLED_BECAUSE_THE_OTHER_PARTY_DOES_NOT_MEET_THE_REQUIREMENTS_FOR_JOINING_THE_GAME);
 		}
 		
-		if (player.getInventoryLimit() * 0.8 <= player.getInventory().getSize())
+		if (!player.isInventoryUnder80(true))
 		{
 			player.sendPacket(SystemMessageId.SINCE_80_PERCENT_OR_MORE_OF_YOUR_INVENTORY_SLOTS_ARE_FULL_YOU_CANNOT_PARTICIPATE_IN_THE_OLYMPIAD);
 			return SystemMessage.getSystemMessage(SystemMessageId.THE_GAME_HAS_BEEN_CANCELLED_BECAUSE_THE_OTHER_PARTY_DOES_NOT_MEET_THE_REQUIREMENTS_FOR_JOINING_THE_GAME);
@@ -144,7 +132,7 @@ public abstract class AbstractOlympiadGame
 		
 		try
 		{
-			player.getSavedLocation().setXYZ(player.getX(), player.getY(), player.getZ());
+			player.setLastCords(player.getX(), player.getY(), player.getZ());
 			
 			player.forceStandUp();
 			player.setTarget(null);
@@ -170,6 +158,18 @@ public abstract class AbstractOlympiadGame
 		{
 			if (player == null)
 				return;
+			
+			if (Config.OLY_SKILL_PROTECT)
+			{
+				for (L2Skill skill : player.getAllSkills())
+				{
+					if (Config.OLY_SKILL_LIST.contains(skill.getId()))
+					{
+						player.removeSkill(skill, false);
+					}
+					player.sendPacket(new ExShowScreenMessage("This skill can not be used", 4000));
+				}
+			}
 			
 			// Remove Buffs
 			player.stopAllEffectsExceptThoseThatLastThroughDeath();
@@ -264,6 +264,16 @@ public abstract class AbstractOlympiadGame
 			}
 		}
 		
+		else
+		{
+			skill = SkillTable.getInstance().getInfo(1085, 1); // acumen 1
+			if (skill != null)
+			{
+				skill.getEffects(player, player);
+				player.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.YOU_FEEL_S1_EFFECT).addSkillName(1085));
+			}
+		}
+		
 		// Heal Player fully
 		player.setCurrentCp(player.getMaxCp());
 		player.setCurrentHp(player.getMaxHp());
@@ -334,6 +344,19 @@ public abstract class AbstractOlympiadGame
 				player.setCurrentMp(player.getMaxMp());
 			}
 			
+			if (Config.OLY_SKILL_PROTECT)
+			{
+				for (L2Skill skill : player.getAllSkills())
+				{
+					if (Config.OLY_SKILL_LIST.contains(skill.getId()))
+					{
+						player.enableSkill(skill);
+					}
+					player.updateEffectIcons();
+					player.sendPacket(new ExShowScreenMessage("His skill can be used normally", 5000));
+				}
+			}
+			
 			// Add Hero Skills
 			if (player.isHero())
 			{
@@ -353,12 +376,11 @@ public abstract class AbstractOlympiadGame
 		if (player == null)
 			return;
 		
-		final Location loc = player.getSavedLocation();
-		if (loc.equals(0, 0, 0))
+		if (player.getLastX() == 0 && player.getLastY() == 0)
 			return;
 		
-		player.teleToLocation(loc, 0);
-		player.getSavedLocation().setXYZ(player.getX(), player.getY(), player.getZ());
+		player.teleToLocation(player.getLastX(), player.getLastY(), player.getLastZ(), 0);
+		player.setLastCords(0, 0, 0);
 	}
 	
 	public static final void rewardParticipant(L2PcInstance player, int[][] reward)

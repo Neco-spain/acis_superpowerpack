@@ -30,15 +30,15 @@ import java.util.logging.Logger;
 import net.sf.l2j.Config;
 import net.sf.l2j.Server;
 import net.sf.l2j.commons.config.ExProperties;
-import net.sf.l2j.commons.lang.StringUtil;
 import net.sf.l2j.gameserver.geoengine.converter.blocks.Block;
 import net.sf.l2j.gameserver.geoengine.converter.blocks.ComplexBlock;
 import net.sf.l2j.gameserver.geoengine.converter.blocks.FlatBlock;
-import net.sf.l2j.gameserver.geoengine.converter.blocks.MultilayerBlock;
 import net.sf.l2j.gameserver.geoengine.converter.blocks.MultilayerCell;
-import net.sf.l2j.gameserver.geoengine.geodata.GeoFormat;
+import net.sf.l2j.gameserver.geoengine.converter.blocks.MultilayerBlock;
 import net.sf.l2j.gameserver.geoengine.geodata.GeoStructure;
+import net.sf.l2j.gameserver.geoengine.geodata.GeoFormat;
 import net.sf.l2j.gameserver.model.L2World;
+import net.sf.l2j.util.Util;
 
 /**
  * @author Hasha
@@ -68,19 +68,19 @@ public final class GeoDataConverter extends Server
 		is.close();
 		
 		// Initialize config
-		StringUtil.printSection("aCis");
+		Util.printSection("aCis");
 		Config.load();
 		
 		// load geodata and pathfinding
-		StringUtil.printSection("Geodata Converter");
+		Util.printSection("Geodata Converter");
 		loadConvertAndSave();
 		
-		StringUtil.printSection("Completed");
+		Util.printSection("Completed");
 	}
 	
 	/**
 	 * Load region geodata file, perform conversion to diagonal geodata type and store as diagonal geodata file.
-	 * @throws IOException
+	 * @throws IOException 
 	 */
 	public final void loadConvertAndSave() throws IOException
 	{
@@ -94,8 +94,7 @@ public final class GeoDataConverter extends Server
 			System.out.print("Select geodata type to convert [J..L2J (*.l2j), O..L2OFF (*.dat)]: ");
 			c = System.in.read();
 			while (System.in.read() != '\n');
-		}
-		while (c != 'J' && c != 'O');
+		} while (c != 'J' && c != 'O');
 		Config.GEODATA_FORMAT = c == 'J' ? GeoFormat.L2J : GeoFormat.L2OFF;
 		
 		_log.info("GeoDataConverter: Converting all " + Config.GEODATA_FORMAT.toString() + " according to listing in \"geoengine.properties\" config file.");
@@ -179,15 +178,15 @@ public final class GeoDataConverter extends Server
 							case GeoStructure.TYPE_FLAT_L2J_L2OFF:
 								_blocks[ix][iy] = new FlatBlock(buffer);
 								break;
-							
+								
 							case GeoStructure.TYPE_COMPLEX_L2J:
 								_blocks[ix][iy] = new ComplexBlock(buffer);
 								break;
-							
+								
 							case GeoStructure.TYPE_MULTILAYER_L2J:
 								_blocks[ix][iy] = new MultilayerBlock(buffer);
 								break;
-							
+								
 							default:
 								throw new IllegalArgumentException("Unknown block type: " + type);
 						}
@@ -203,11 +202,11 @@ public final class GeoDataConverter extends Server
 							case GeoStructure.TYPE_FLAT_L2J_L2OFF:
 								_blocks[ix][iy] = new FlatBlock(buffer);
 								break;
-							
+								
 							case GeoStructure.TYPE_COMPLEX_L2OFF:
 								_blocks[ix][iy] = new ComplexBlock(buffer);
 								break;
-							
+								
 							default:
 								_blocks[ix][iy] = new MultilayerBlock(buffer);
 								break;
@@ -257,9 +256,15 @@ public final class GeoDataConverter extends Server
 						nswe = updateNsweBelow(x, y, height, nswe);
 						
 						/*
-						 * // test byte test = updateNsweNearest(x, y, height, nswe); if (nswe != test) { int geoX = (rx - 16) * GeoStructure.REGION_CELLS_X + x; int geoY = (ry - 10) * GeoStructure.REGION_CELLS_Y + y; System.out.println("C: X=" + geoX + " Y=" + geoY + " Z=" + height + " below=" +
-						 * Integer.toBinaryString((0x100 | nswe) & 0x1FF).substring(1) + " near=" + Integer.toBinaryString((0x100 | test) & 0x1FF).substring(1)); }
-						 */
+						// test
+						byte test = updateNsweNearest(x, y, height, nswe);
+						if (nswe != test)
+						{
+							int geoX = (rx - 16) * GeoStructure.REGION_CELLS_X + x;
+							int geoY = (ry - 10) * GeoStructure.REGION_CELLS_Y + y;
+							System.out.println("C: X=" + geoX + " Y=" + geoY + " Z=" + height + " below=" + Integer.toBinaryString((0x100 | nswe) & 0x1FF).substring(1) + " near=" + Integer.toBinaryString((0x100 | test) & 0x1FF).substring(1));
+						}
+						*/
 						
 						((ComplexBlock) block).updateNSWE(x, y, nswe);
 					}
@@ -275,9 +280,15 @@ public final class GeoDataConverter extends Server
 							nswe = updateNsweBelow(x, y, height, nswe);
 							
 							/*
-							 * // test byte test = updateNsweNearest(x, y, height, nswe); if (nswe != test) { int geoX = (rx - 16) * GeoStructure.REGION_CELLS_X + x; int geoY = (ry - 10) * GeoStructure.REGION_CELLS_Y + y; System.out.println("M: X=" + geoX + " Y=" + geoY + " Z=" + height + " below="
-							 * + Integer.toBinaryString((0x100 | nswe) & 0x1FF).substring(1) + " near=" + Integer.toBinaryString((0x100 | test) & 0x1FF).substring(1)); }
-							 */
+							// test
+							byte test = updateNsweNearest(x, y, height, nswe);
+							if (nswe != test)
+							{
+								int geoX = (rx - 16) * GeoStructure.REGION_CELLS_X + x;
+								int geoY = (ry - 10) * GeoStructure.REGION_CELLS_Y + y;
+								System.out.println("M: X=" + geoX + " Y=" + geoY + " Z=" + height + " below=" + Integer.toBinaryString((0x100 | nswe) & 0x1FF).substring(1) + " near=" + Integer.toBinaryString((0x100 | test) & 0x1FF).substring(1));
+							}
+							*/
 							
 							cell.updateNswe(i, nswe);
 						}
@@ -304,9 +315,17 @@ public final class GeoDataConverter extends Server
 	}
 	
 	/*
-	 * private final byte getNsweNearest(int geoX, int geoY, short worldZ) { if (geoX < 0 || geoX >= GeoStructure.REGION_CELLS_X) return 0; if (geoY < 0 || geoY >= GeoStructure.REGION_CELLS_Y) return 0; return _blocks[geoX / GeoStructure.BLOCK_CELLS_X][geoY /
-	 * GeoStructure.BLOCK_CELLS_Y].getNsweNearest(geoX, geoY, worldZ); }
-	 */
+	private final byte getNsweNearest(int geoX, int geoY, short worldZ)
+	{
+		if (geoX < 0 || geoX >= GeoStructure.REGION_CELLS_X)
+			return 0;
+		
+		if (geoY < 0 || geoY >= GeoStructure.REGION_CELLS_Y)
+			return 0;
+		
+		return _blocks[geoX / GeoStructure.BLOCK_CELLS_X][geoY / GeoStructure.BLOCK_CELLS_Y].getNsweNearest(geoX, geoY, worldZ);
+	}
+	*/
 	
 	private final byte getNsweBelow(int geoX, int geoY, short worldZ)
 	{
@@ -320,11 +339,32 @@ public final class GeoDataConverter extends Server
 	}
 	
 	/*
-	 * private final byte updateNsweNearest(int x, int y, short z, byte nswe) { byte nsweN = getNsweNearest(x, y - 1, z); byte nsweS = getNsweNearest(x, y + 1, z); byte nsweW = getNsweNearest(x - 1, y, z); byte nsweE = getNsweNearest(x + 1, y, z); // North-West if (((nswe & GeoStructure.CELL_FLAG_N)
-	 * != 0 && (nsweN & GeoStructure.CELL_FLAG_W) != 0) || ((nswe & GeoStructure.CELL_FLAG_W) != 0 && (nsweW & GeoStructure.CELL_FLAG_N) != 0)) nswe |= GeoStructure.CELL_FLAG_NW; // North-East if (((nswe & GeoStructure.CELL_FLAG_N) != 0 && (nsweN & GeoStructure.CELL_FLAG_E) != 0) || ((nswe &
-	 * GeoStructure.CELL_FLAG_E) != 0 && (nsweE & GeoStructure.CELL_FLAG_N) != 0)) nswe |= GeoStructure.CELL_FLAG_NE; // South-West if (((nswe & GeoStructure.CELL_FLAG_S) != 0 && (nsweS & GeoStructure.CELL_FLAG_W) != 0) || ((nswe & GeoStructure.CELL_FLAG_W) != 0 && (nsweW & GeoStructure.CELL_FLAG_S)
-	 * != 0)) nswe |= GeoStructure.CELL_FLAG_SW; // South-East if (((nswe & GeoStructure.CELL_FLAG_S) != 0 && (nsweS & GeoStructure.CELL_FLAG_E) != 0) || ((nswe & GeoStructure.CELL_FLAG_E) != 0 && (nsweE & GeoStructure.CELL_FLAG_S) != 0)) nswe |= GeoStructure.CELL_FLAG_SE; return nswe; }
-	 */
+	private final byte updateNsweNearest(int x, int y, short z, byte nswe)
+	{
+		byte nsweN = getNsweNearest(x, y - 1, z);
+		byte nsweS = getNsweNearest(x, y + 1, z);
+		byte nsweW = getNsweNearest(x - 1, y, z);
+		byte nsweE = getNsweNearest(x + 1, y, z);
+		
+		// North-West
+		if (((nswe & GeoStructure.CELL_FLAG_N) != 0 && (nsweN & GeoStructure.CELL_FLAG_W) != 0) || ((nswe & GeoStructure.CELL_FLAG_W) != 0 && (nsweW & GeoStructure.CELL_FLAG_N) != 0))
+			nswe |= GeoStructure.CELL_FLAG_NW;
+		
+		// North-East
+		if (((nswe & GeoStructure.CELL_FLAG_N) != 0 && (nsweN & GeoStructure.CELL_FLAG_E) != 0) || ((nswe & GeoStructure.CELL_FLAG_E) != 0 && (nsweE & GeoStructure.CELL_FLAG_N) != 0))
+			nswe |= GeoStructure.CELL_FLAG_NE;
+		
+		// South-West
+		if (((nswe & GeoStructure.CELL_FLAG_S) != 0 && (nsweS & GeoStructure.CELL_FLAG_W) != 0) || ((nswe & GeoStructure.CELL_FLAG_W) != 0 && (nsweW & GeoStructure.CELL_FLAG_S) != 0))
+			nswe |= GeoStructure.CELL_FLAG_SW;
+		
+		// South-East
+		if (((nswe & GeoStructure.CELL_FLAG_S) != 0 && (nsweS & GeoStructure.CELL_FLAG_E) != 0) || ((nswe & GeoStructure.CELL_FLAG_E) != 0 && (nsweE & GeoStructure.CELL_FLAG_S) != 0))
+			nswe |= GeoStructure.CELL_FLAG_SE;
+		
+		return nswe;
+	}
+	*/
 	
 	/**
 	 * Updates the NSWE flag with diagonal flags.
@@ -401,5 +441,5 @@ public final class GeoDataConverter extends Server
 	public static void main(String[] args) throws Exception
 	{
 		new GeoDataConverter();
-	}
+	}	
 }

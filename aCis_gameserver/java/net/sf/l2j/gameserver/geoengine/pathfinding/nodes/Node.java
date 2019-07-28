@@ -26,7 +26,7 @@ public class Node
 	private Node _parent;
 	// node child (for moving over nodes during iteration)
 	private Node _child;
-	
+
 	// node G cost (movement cost = parent movement cost + current movement cost)
 	private double _cost = -1000;
 	

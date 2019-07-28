@@ -1,17 +1,3 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.handler.skillhandlers;
 
 import net.sf.l2j.gameserver.handler.ISkillHandler;
@@ -41,7 +27,7 @@ public class DrainSoul implements ISkillHandler
 		// Check player.
 		if (activeChar == null || activeChar.isDead() || !(activeChar instanceof L2PcInstance))
 			return;
-		
+				
 		// Check quest condition.
 		final L2PcInstance player = (L2PcInstance) activeChar;
 		QuestState st = player.getQuestState(qn);
@@ -49,7 +35,7 @@ public class DrainSoul implements ISkillHandler
 			return;
 		
 		// Get target.
-		L2Object target = targets[0];
+		L2Object target = targets[0]; 
 		if (target == null || !(target instanceof L2Attackable))
 			return;
 		

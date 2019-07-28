@@ -1,22 +1,7 @@
-/*
- * This program is free software: you can redistribute it and/or modify it under
- * the terms of the GNU General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
- * details.
- * 
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- */
 package net.sf.l2j.gameserver.handler.admincommandhandlers;
 
 import java.util.StringTokenizer;
 
-import net.sf.l2j.commons.lang.StringUtil;
 import net.sf.l2j.gameserver.handler.IAdminCommandHandler;
 import net.sf.l2j.gameserver.model.actor.instance.L2PcInstance;
 import net.sf.l2j.gameserver.network.serverpackets.AdminForgePacket;
@@ -162,35 +147,29 @@ public class AdminPForge implements IAdminCommandHandler
 	
 	private static void showPage2(L2PcInstance activeChar, String format)
 	{
-		final NpcHtmlMessage html = new NpcHtmlMessage(0);
-		html.setFile("data/html/admin/pforge2.htm");
-		html.replace("%format%", format);
+		NpcHtmlMessage adminReply = new NpcHtmlMessage(0);
+		adminReply.setFile("data/html/admin/pforge2.htm");
+		adminReply.replace("%format%", format);
 		
-		final StringBuilder sb = new StringBuilder();
-		
-		// First use of sb.
+		StringBuilder replyMSG = new StringBuilder();
 		for (int i = 0; i < format.length(); i++)
-			StringUtil.append(sb, format.charAt(i), " : <edit var=\"v", i, "\" width=100><br1>");
-		html.replace("%valueditors%", sb.toString());
+			replyMSG.append(format.charAt(i) + " : <edit var=\"v" + i + "\" width=100><br1>");
+		adminReply.replace("%valueditors%", replyMSG.toString());
+		replyMSG.setLength(0);
 		
-		// Cleanup sb.
-		sb.setLength(0);
-		
-		// Second use of sb.
 		for (int i = 0; i < format.length(); i++)
-			StringUtil.append(sb, " \\$v", i);
-		
-		html.basicReplace("%send%", sb.toString());
-		activeChar.sendPacket(html);
+			replyMSG.append(" \\$v" + i);
+		adminReply.replace("%send%", replyMSG.toString());
+		activeChar.sendPacket(adminReply);
 	}
 	
 	private static void showPage3(L2PcInstance activeChar, String format, String command)
 	{
-		final NpcHtmlMessage html = new NpcHtmlMessage(0);
-		html.setFile("data/html/admin/pforge3.htm");
-		html.replace("%format%", format);
-		html.replace("%command%", command);
-		activeChar.sendPacket(html);
+		NpcHtmlMessage adminReply = new NpcHtmlMessage(0);
+		adminReply.setFile("data/html/admin/pforge3.htm");
+		adminReply.replace("%format%", format);
+		adminReply.replace("%command%", command);
+		activeChar.sendPacket(adminReply);
 	}
 	
 	@Override
